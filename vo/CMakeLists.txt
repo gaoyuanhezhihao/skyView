@@ -1,0 +1,10 @@
+#file(GLOB SRC "*.cpp")
+set(SRC vo.hpp vo.cpp)
+add_library(libvo STATIC ${SRC})
+target_link_libraries(libvo libconfig libvo libbase libstereo libfeature)
+target_link_libraries(libvo ${OpenCV_LIBS})
+target_include_directories(libvo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+#add_executable(test_vo test_vo.cpp)
+#target_link_libraries(test_vo libvo libconfig libbase libstereo libfeature)
+add_subdirectory(test)

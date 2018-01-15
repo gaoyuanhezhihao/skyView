@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/liblibstereo.a  CMakeFiles/libstereo.dir/blend.cpp.o CMakeFiles/libstereo.dir/stereo.cpp.o CMakeFiles/libstereo.dir/panoramas.cpp.o
+/usr/bin/ranlib ../../lib/liblibstereo.a

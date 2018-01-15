@@ -1,0 +1,5 @@
+file(GLOB SRC "*.cpp" "*.hpp")
+add_library(libstereo STATIC ${SRC})
+target_link_libraries(libstereo libbase libconfig)
+target_include_directories(libstereo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(libstereo ${OpenCV_LIBS})

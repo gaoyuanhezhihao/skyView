@@ -1,0 +1,7 @@
+file(GLOB SRC "*.cpp")
+add_library(libfeature STATIC ${SRC})
+target_link_libraries(libfeature)
+target_link_libraries(libfeature libconfig)
+target_link_libraries(libfeature libbase)
+target_include_directories(libfeature PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(libfeature ${OpenCV_LIBS})

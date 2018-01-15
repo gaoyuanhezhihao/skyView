@@ -1,0 +1,40 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/hzh/car/sky_view/config/Config.cpp
+Config.hpp
+/home/hzh/car/sky_view/config/Config.hpp
+string
+-
+stdlib.h
+/home/hzh/car/sky_view/config/stdlib.h
+iostream
+-
+fstream
+-
+str_proc.hpp
+/home/hzh/car/sky_view/config/str_proc.hpp
+stdexcept
+-
+
+/home/hzh/car/sky_view/config/Config.hpp
+map
+-
+string
+-
+unordered_map
+-
+
+/home/hzh/car/sky_view/config/str_proc.cpp
+str_proc.hpp
+/home/hzh/car/sky_view/config/str_proc.hpp
+
+/home/hzh/car/sky_view/config/str_proc.hpp
+string
+-
+

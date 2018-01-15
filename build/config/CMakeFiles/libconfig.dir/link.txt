@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/liblibconfig.a  CMakeFiles/libconfig.dir/Config.cpp.o CMakeFiles/libconfig.dir/str_proc.cpp.o
+/usr/bin/ranlib ../../lib/liblibconfig.a

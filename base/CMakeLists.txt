@@ -1,0 +1,6 @@
+set(SRC base.cpp base.hpp debug.cpp debug.hpp)
+add_library(libbase STATIC ${SRC})
+target_link_libraries(libbase )
+target_link_libraries(libbase libconfig)
+target_include_directories(libbase PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(libbase ${OpenCV_LIBS})
