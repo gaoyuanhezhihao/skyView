@@ -37,13 +37,13 @@ void test() {
     //std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
     //std::cout.rdbuf(out.rdbuf()); 
     
-    Frame prev;
+    Frame prev(id_start);
     read_frame(id_start, prev);
     preprocess(prev);
     for(int i = id_start+1; i<= id_last; ++i) {
         cout << i<< "\n";
         printf("%d\n", i);
-        Frame cur;
+        Frame cur(i);
         read_frame(i, cur);
         preprocess(cur);
         //cv::imshow("prev", draw_frame(prev));

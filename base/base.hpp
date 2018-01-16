@@ -9,10 +9,15 @@
 
 
 struct Frame{
+    int id;
     cv::Mat rgb;
     cv::Mat edge;
     std::vector<cv::Point2f> keyPts;
     std::vector<cv::Vec2f> lines;
+    cv::Mat R_global;
+    cv::Mat t_global;
+
+    Frame(int id):id(id), R_global(cv::Mat::eye(2, 2, CV_64F)), t_global(cv::Mat::zeros(2, 1, CV_64F)){}
 };
 
 struct Match{

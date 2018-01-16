@@ -36,7 +36,7 @@ void Config_Map::init(const char * fname) {
     string line;
     string feature_name;
     //unordered_map<string, universal_type> config_map;
-    universal_type feature_value;
+    //universal_type feature_value;
     size_t split_id = 0;
     ifstream config_file(fname);
     if(!config_file) {
@@ -56,8 +56,9 @@ void Config_Map::init(const char * fname) {
                 trim_both(feature_name);
                 string ftr_v = line.substr(split_id + 1);
                 trim_both(ftr_v);
-                feature_value.set_value(ftr_v);
-                map.insert(pair<string, universal_type> (feature_name, feature_value));
+                //feature_value.set_value(ftr_v);
+                universal_type ut(feature_name, ftr_v);
+                map.insert(pair<string, universal_type> (feature_name, ut));
             }
         }
     }

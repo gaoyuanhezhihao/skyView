@@ -6,12 +6,14 @@
 #include <dirent.h>
 #include <errno.h>
 #include <memory>
+#include <list>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+#include "base.hpp"
 #include "Config.hpp"
 #include "debug.hpp"
 #include "vo.hpp"
@@ -20,7 +22,7 @@
 
 using namespace cv;
 using namespace std;
-
+std::streambuf *coutbuf = nullptr;
 
 void preprocess(Frame & f) {
     detect_lines(f);
@@ -28,18 +30,32 @@ void preprocess(Frame & f) {
     get_inlier_intersects(f);
 }
 
+void redirect_cout() {
+    const string dst_dir = configs["result_dir"];
+    std::ofstream out(dst_dir+"cout.txt");
+    coutbuf= std::cout.rdbuf(); //save old buf
+    std::cout.rdbuf(out.rdbuf()); 
+}
+
+void set_cout_default() {
+    std::cout.rdbuf(coutbuf);
+}
+
 void test() {
     const string dst_dir = configs["result_dir"];
     const int id_start = configs["start_id"];
     const int id_last = configs["last_id"];
-    //std::ofstream out(dst_dir+"cout.txt");
-    //std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
-    //std::cout.rdbuf(out.rdbuf()); 
-    
-    Frame prev(id_start);
-    read_frame(id_start, prev);
-    preprocess(prev);
+    const bool show_match = configs["show_match"];
+    char buf[80] = {0};
+    redirect_cout();
+
+    std::vector<Frame> frame_chain;
+    Frame first(id_start);
+    read_frame(id_start, first);
+    preprocess(first);
+    frame_chain.push_back(first);
     for(int i = id_start+1; i<= id_last; ++i) {
+        Frame & prev = frame_chain.back();
         cout << i<< "\n";
         printf("%d\n", i);
         Frame cur(i);
@@ -50,12 +66,22 @@ void test() {
         waitKey(0);
         shared_ptr<Match> pm = match_keyPoints(prev, cur);
         cv::Mat imgMatches;
-        draw_matches(*pm, imgMatches);
-        cv::imshow("match", imgMatches);
-        cv::waitKey(0);
-        swap(prev, cur);
+        if(show_match) {
+            draw_matches(*pm, imgMatches);
+            std::sprintf(buf, "%d--%d.jpg", prev.id, cur.id);
+            cv::imwrite(dst_dir + buf, imgMatches);
+            //cv::imshow("match", imgMatches);
+            //cv::waitKey(0);
+        }
+
+        get_motion(*pm);
+        cur.R_global = pm->R.inv() * prev.R_global;
+        cur.t_global = pm->t + prev.t_global;
+        cout << "cur.R= " << cur.R_global << "\n";
+        cout << "cur.t= " << cur.t_global << "\n";
+        frame_chain.push_back(cur);
     }
-    //std::cout.rdbuf(coutbuf);
+    set_cout_default();
 }
 
 int main(int argc, char ** argv) {

@@ -8,9 +8,10 @@ using namespace std;
 
 class universal_type{
     private:
+        const string key;
         string raw_data;
     public:
-        universal_type(char * raw):raw_data(raw) {
+        universal_type(const string key, const string data):key(key), raw_data(data) {
             ;
         }
         universal_type(){
@@ -29,6 +30,17 @@ class universal_type{
         }
         operator string() const {
             return raw_data;
+        }
+        operator bool() const{
+            if("true" == raw_data) {
+                return true;
+            }else if("false" == raw_data) {
+                return false;
+            }else{
+                string err = string("Config file bug: '") + key + \
+                             "' is not a bool" + "\n 'true' or 'false'";
+                throw std::out_of_range(err);
+            }
         }
 
      friend int & operator << (int & dst, universal_type &);

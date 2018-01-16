@@ -32,6 +32,8 @@ cv::Rect2f get_min_total_rect(const Rect2f & rect1, const Rect2f & rect2) {
     return Rect2f(x_min, y_min, x_max-x_min, y_max-y_min);
 }
 
+
+
 void merge_image(const Mat & im1, const Mat & im2, const Mat & R, const Mat & t) {
     const int w2 = im2.cols;
     const int h2 = im2.rows;
