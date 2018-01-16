@@ -12,6 +12,18 @@
 #include "base.hpp"
 using namespace cv;
 using namespace std;
+
+Point2f trsf_pt_2D(const Mat & R, const Mat & t, Point2f pt) {
+    CV_Assert(R.type() == CV_64F);
+    cv::Mat pt_vec(2, 1, CV_64F);
+    pt_vec.at<double>(0, 0) = pt.x;
+    pt_vec.at<double>(1, 0) = pt.y;
+
+    cv::Mat new_pt = R * pt_vec + t;
+    return Point2f(new_pt.at<double>(0, 0), new_pt.at<double>(1, 0));
+}
+
+
 cv::Mat load_mat(const string file_name, const string mat_name) {
     cv::Mat mat;
     cv::FileStorage fs(file_name, cv::FileStorage::READ);

@@ -15,6 +15,7 @@ using namespace cv;
 using namespace std;
 using namespace Eigen;
 
+
 void read_frame(const int i, Frame & f) {
     static const string samples_dir = configs["samples"];
     static const string dst_dir = configs["result_dir"];
@@ -95,6 +96,15 @@ bool get_motion(Match & m) {
     double relative_error = (A*x - b).norm() / b.norm(); 
     cout << "relative error = "<< relative_error << "\n";
     cout << "x=" << x << "\n";
+    m.R = Mat::zeros(2, 2, CV_64F);
+    m.t = Mat::zeros(2, 1, CV_64F);
+    m.R.at<double> (0, 0) = x(0, 0);
+    m.R.at<double> (0, 1) = x(1, 0);
+    m.R.at<double> (1, 0) = x(3, 0);
+    m.R.at<double> (1, 1) = x(4, 0);
+
+    m.t.at<double> (0, 0) = x(2, 0);
+    m.t.at<double> (1, 0) = x(5, 0);
     return true;
 }
 

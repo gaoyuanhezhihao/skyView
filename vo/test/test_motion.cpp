@@ -12,6 +12,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+#include "base.hpp"
 #include "Config.hpp"
 #include "debug.hpp"
 #include "vo.hpp"
@@ -56,7 +57,6 @@ void test() {
 
         get_motion(*pm);
         /*TODO back project merge*/
-
         swap(prev, cur);
     }
     //std::cout.rdbuf(coutbuf);

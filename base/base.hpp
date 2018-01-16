@@ -22,6 +22,8 @@ struct Match{
     Match(Frame* pframe1, Frame * pframe2):pf1(pframe1), pf2(pframe2) {
 
     }
+    cv::Mat R;
+    cv::Mat t;
 };
 
 cv::Scalar rand_color(); 
