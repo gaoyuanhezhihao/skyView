@@ -71,17 +71,17 @@ bool get_inlier_intersects(Frame & f)  {
 
 void detect_lines(Frame & f) {
     CV_Assert(!f.rgb.empty());
-    Mat dst, cdst;
-    cvtColor(f.rgb, dst, CV_BGR2GRAY);
-    blur(dst, dst, Size(5,5) );
-    Canny(dst, dst, 50, 100, 5);
-    cvtColor(dst, cdst, CV_GRAY2BGR);
+    Mat cdst;
+    cvtColor(f.rgb, f.gray, CV_BGR2GRAY);
+    blur(f.gray, f.gray, Size(5,5) );
+    Canny(f.gray, f.gray, 50, 100, 5);
+    cvtColor(f.gray, cdst, CV_GRAY2BGR);
     //cv::imshow("edge", cdst);
     //cv::waitKey(1);
     //vector<Vec4i> linesP; 
-    //HoughLinesP(dst, linesP, 1, CV_PI/180, 50, 50, 10 ); 
+    //HoughLinesP(f.gray, linesP, 1, CV_PI/180, 50, 50, 10 ); 
     //vector<Vec2f> lines;
-    HoughLines(dst, f.lines, 0.5, CV_PI/180, 200, 0, 0 );
+    HoughLines(f.gray, f.lines, 0.5, CV_PI/180, 200, 0, 0 );
 }
 
 

@@ -64,8 +64,6 @@ void test() {
     Frame prev(id_start);
     read_frame(id_start, prev);
     preprocess(prev);
-    cv::Mat prevGray;
-    cvtColor(prev.rgb, prevGray, COLOR_BGR2GRAY);
     
     Size subPixWinSize(10,10), winSize(31,31);
     TermCriteria termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.03);
@@ -75,13 +73,16 @@ void test() {
 
         Frame cur(i);
         read_frame(i, cur);
+        preprocess(cur);
 
-        cv::Mat cur_gray;
-        cvtColor(cur.rgb, cur_gray, COLOR_BGR2GRAY);
+        //cvtColor(prev.rgb, prevGray, COLOR_BGR2GRAY);
+        //cvtColor(cur.rgb, cur_gray, COLOR_BGR2GRAY);
         vector<Point2f> tracked_pts;
         vector<uchar> status;
         vector<float> err;
-        calcOpticalFlowPyrLK(prevGray, cur_gray, prev.keyPts,
+        CV_Assert(!prev.gray.empty());
+        CV_Assert(!cur.gray.empty());
+        calcOpticalFlowPyrLK(prev.gray, cur.gray, prev.keyPts,
                 tracked_pts, status, err, winSize, 3,
                 termcrit, 0, 0.001);
         vector<pair<int, int>> good_match;
@@ -95,12 +96,19 @@ void test() {
         }
         tracked_pts.resize(k);
         Mat imgMatch = draw_track_match(prev.rgb, prev.keyPts, cur.rgb, tracked_pts, good_match);
-        cv::imshow("tracked Points", imgMatch);
-        waitKey(0);
+        //cv::imshow("tracked Points", imgMatch);
+        cv::imwrite(dst_dir+to_string(i-1) + "--" + to_string(i) + ".jpg", imgMatch);
+        //waitKey(0);
 
-        preprocess(cur);
+
+        Mat cur_detect_img;
+        cur.rgb.copyTo(cur_detect_img);
+        draw_lines(cur_detect_img, cur.lines);
+        draw_points(cur_detect_img, cur.keyPts);
+        cv::imwrite(dst_dir + to_string(i) + "_feature.jpg", cur_detect_img);
         //detect_lines(cur);
         //get_inlier_intersects(cur);
+        
         prev = cur;
     }
 }

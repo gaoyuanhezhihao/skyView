@@ -13,6 +13,7 @@ const cv::Scalar RED(0, 0, 255);
 struct Frame{
     int id;
     cv::Mat rgb;
+    cv::Mat gray;
     cv::Mat edge;
     std::vector<cv::Point2f> keyPts;
     std::vector<cv::Vec2f> lines;
