@@ -70,6 +70,7 @@ bool get_inlier_intersects(Frame & f)  {
 
 
 void detect_lines(Frame & f) {
+    CV_Assert(!f.rgb.empty());
     Mat dst, cdst;
     cvtColor(f.rgb, dst, CV_BGR2GRAY);
     blur(dst, dst, Size(5,5) );
@@ -99,7 +100,7 @@ vector<Vec2f> merge_close_lines(vector<Vec2f> & lines) {
     //cout << lines[p] << "\n";
     vector<bool> keep(sz, true);
     for(int p = 0; p < sz; ++p) {
-        cout << lines[p];
+        //cout << lines[p];
         if(!keep[p]) {
             continue;
         }

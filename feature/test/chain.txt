@@ -1,0 +1,10 @@
+option = test 
+samples = ./data/floor_c920_640x480/imgs/
+result_dir = ./data/floor_c920_640x480/test_result/
+cols_sky_im = 640 
+rows_sky_im = 480
+start_id = 65 
+last_id = 447 
+merge_line_rho_threshold = 7.0
+merge_line_theta_threshold = 0.1
+show_match = true

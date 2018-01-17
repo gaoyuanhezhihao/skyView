@@ -7,6 +7,8 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
+const cv::Scalar GREEN(0, 255, 0);
+const cv::Scalar RED(0, 0, 255);
 
 struct Frame{
     int id;

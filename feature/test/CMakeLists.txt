@@ -1,0 +1,2 @@
+add_executable(test_pt_track test_pt_track.cpp)
+target_link_libraries(test_pt_track libconfig libbase libstereo libfeature)
