@@ -90,12 +90,12 @@ bool get_motion(Match & m) {
         b(2*i, 0) = x1;
         b(2*i+1, 0) = y1;
     }
-    cout << "A=" <<  A << "\n";
-    cout << "b=" <<  b << "\n";
+    //cout << "A=" <<  A << "\n";
+    //cout << "b=" <<  b << "\n";
     Matrix<double, 6, 1> x = A.colPivHouseholderQr().solve(b);
     double relative_error = (A*x - b).norm() / b.norm(); 
     cout << "relative error = "<< relative_error << "\n";
-    cout << "x=" << x << "\n";
+    //cout << "x=" << x << "\n";
     m.R = Mat::zeros(2, 2, CV_64F);
     m.t = Mat::zeros(2, 1, CV_64F);
     m.R.at<double> (0, 0) = x(0, 0);

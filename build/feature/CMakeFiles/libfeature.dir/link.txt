@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/liblibfeature.a  CMakeFiles/libfeature.dir/line.cpp.o CMakeFiles/libfeature.dir/filter.cpp.o
-/usr/bin/ranlib ../../lib/liblibfeature.a

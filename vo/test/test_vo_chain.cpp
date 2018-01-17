@@ -23,7 +23,7 @@
 using namespace cv;
 using namespace std;
 std::streambuf *coutbuf = nullptr;
-
+std::shared_ptr<std::ofstream> p_out = nullptr;
 void preprocess(Frame & f) {
     detect_lines(f);
     f.lines = merge_close_lines(f.lines);
@@ -32,9 +32,10 @@ void preprocess(Frame & f) {
 
 void redirect_cout() {
     const string dst_dir = configs["result_dir"];
-    std::ofstream out(dst_dir+"cout.txt");
+    //std::ofstream out(dst_dir+"cout.txt");
+    p_out = std::make_shared<std::ofstream>(dst_dir+"cout.txt");
     coutbuf= std::cout.rdbuf(); //save old buf
-    std::cout.rdbuf(out.rdbuf()); 
+    std::cout.rdbuf(p_out->rdbuf()); 
 }
 
 void set_cout_default() {
@@ -63,7 +64,7 @@ void test() {
         preprocess(cur);
         //cv::imshow("prev", draw_frame(prev));
         //cv::imshow("cur", draw_frame(cur));
-        waitKey(0);
+        //waitKey(0);
         shared_ptr<Match> pm = match_keyPoints(prev, cur);
         cv::Mat imgMatches;
         if(show_match) {
@@ -77,6 +78,8 @@ void test() {
         get_motion(*pm);
         cur.R_global = pm->R.inv() * prev.R_global;
         cur.t_global = pm->t + prev.t_global;
+        cout << "R=" << pm->R.inv() << "\n";
+        cout << "t=" << pm->t << "\n";
         cout << "cur.R= " << cur.R_global << "\n";
         cout << "cur.t= " << cur.t_global << "\n";
         frame_chain.push_back(cur);
