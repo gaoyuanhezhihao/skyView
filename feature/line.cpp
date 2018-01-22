@@ -179,3 +179,39 @@ bool predict_lines(vector<pair<int, int>> & line_pts_map, Tracker & tracker, vec
     }
     return true;
 }
+
+bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_ranges) {
+    static const double theta_resolution = configs["theta_resolution"];
+    static const double rho_resolution = configs["rho_resolution"];
+
+    const int width = edge_im.cols;
+    const int height = edge_im.rows;
+    CvMat c_image = edge_im;
+    const uchar * image;
+    image = c_image.data.ptr;
+
+    vector<double> theta_vec;
+    for(const pair<double, double> & rg: theta_ranges)  {
+        double t = rg.first;
+        while(t < rg.second) {
+            theta_vec.push_back(t);
+            t += theta_resolution;
+        }
+    }
+
+    int numrho = cvRound(((width + height) * 2 + 1) / rho_resolution);
+    if(theta_vec.empty()) {
+        return false;
+    }
+
+    int numangle = theta_vec.size();
+    int * accum = new int[numangle*numrho];
+    double * Sin = new double[numangle];
+    double * Cos = new double[numangle];
+    for(int i = 0; i < numangle; ++i) {
+        Sin[i] = 
+    }
+
+    vector<int*> cnt_ptr_vec;
+    //int numangle = cvRound(CV_PI / theta_resolution);
+}
