@@ -5,10 +5,12 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <list>
 #include "line.hpp"
 #include "debug.hpp"
 #include "Config.hpp"
 #include "base.hpp"
+#include "track.hpp"
 
 using namespace cv;
 using namespace std;
@@ -50,7 +52,7 @@ bool get_inlier_intersects(Frame & f)  {
     //vector<Point2f> inliers;
     for(int i = 0; i < sz; ++i) {
         for(int j = i+1; j < sz; ++ j){
-            cv::Mat tmp_img = debug_img.clone();
+            //cv::Mat tmp_img = debug_img.clone();
             //cout << "=====" << lines[i] << "---" << lines[j] << endl;
             //vector<Vec2f> tmp_lines{lines[i], lines[j]};
             //draw_lines(tmp_img, tmp_lines);
@@ -68,14 +70,25 @@ bool get_inlier_intersects(Frame & f)  {
     return true;
 }
 
+void detect_RangHoughLine(const Mat & rgb, Mat & gray, Mat & edge, vector<Vec2f> & lines) {
+    CV_Assert(!rgb.empty());
+    cvtColor(rgb, gray, CV_BGR2GRAY);
+    blur(gray, gray, Size(5, 5));
+    Canny(gray, edge, 50, 100, 5);
+
+}
+bool RangeHoughLine(const Mat & edge, const double rho_resolution, 
+        const double theta_resolution) {
+
+}
 
 void detect_lines(Frame & f) {
     CV_Assert(!f.rgb.empty());
-    Mat cdst;
     cvtColor(f.rgb, f.gray, CV_BGR2GRAY);
     blur(f.gray, f.gray, Size(5,5) );
     Canny(f.gray, f.gray, 50, 100, 5);
-    cvtColor(f.gray, cdst, CV_GRAY2BGR);
+    //Mat cdst;
+    //cvtColor(f.gray, cdst, CV_GRAY2BGR);
     //cv::imshow("edge", cdst);
     //cv::waitKey(1);
     //vector<Vec4i> linesP; 
@@ -125,4 +138,44 @@ vector<Vec2f> merge_close_lines(vector<Vec2f> & lines) {
         }
     }
     return merged;
+}
+
+double theta_from_endPoint(const Point2f & pt1, const Point2f & pt2) {
+    return atan((pt1.x - pt2.x)/ (pt2.y-pt1.y));
+}
+
+
+bool predict_lines(vector<pair<int, int>> & line_pts_map, Tracker & tracker, vector<pair<double, double>> & theta_rgs) {
+    static const double theta_width = double(configs["theta_width"]) * CV_PI/180;
+    const vector<Point2f> & tracked_pts = tracker.get_tracked_pts();
+
+    for(size_t i = 0; i < line_pts_map.size(); ++i) {
+        const int u = line_pts_map[i].first;
+        const int v = line_pts_map[i].second;
+
+        if( !tracker.check_status(u) || !tracker.check_status(v) ) {
+            continue;
+        }
+        const double theta = theta_from_endPoint(tracked_pts[u], tracked_pts[v]);
+        double theta_l = max(0.0, theta - theta_width);
+        double theta_r = min(2*CV_PI, theta+ theta_width);
+        theta_rgs.emplace_back(theta_l, theta_r);
+    }
+
+    if(theta_rgs.empty()) {
+        return false;
+    }
+    /* merge overlaped ranges */
+    std::sort(theta_rgs.begin(), theta_rgs.end());
+    int k = 0;
+    pair<double, double> cur = theta_rgs[0];
+    for(size_t i = 1; i < theta_rgs.size(); ++i) {
+        if(theta_rgs[i].first <= cur.second) {
+            cur.second = max(cur.second, theta_rgs[i].second);
+        }else {
+            theta_rgs[k++] = cur;
+            cur = theta_rgs[i];
+        }
+    }
+    return true;
 }

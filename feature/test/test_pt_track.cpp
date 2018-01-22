@@ -61,9 +61,9 @@ void test() {
     const int id_last = configs["last_id"];
     
 
-    Frame prev(id_start);
-    read_frame(id_start, prev);
-    preprocess(prev);
+    Frame prevFrame{id_start};
+    read_frame(id_start, prevFrame);
+    preprocess(prevFrame);
     
     Size subPixWinSize(10,10), winSize(31,31);
     TermCriteria termcrit(TermCriteria::COUNT|TermCriteria::EPS,20,0.03);
@@ -71,31 +71,31 @@ void test() {
         cout << i<< "\n";
         printf("%d\n", i);
 
-        Frame cur(i);
+        Frame cur{i};
         read_frame(i, cur);
         preprocess(cur);
 
-        //cvtColor(prev.rgb, prevGray, COLOR_BGR2GRAY);
+        //cvtColor(prevFrame.rgb, prevFrameGray, COLOR_BGR2GRAY);
         //cvtColor(cur.rgb, cur_gray, COLOR_BGR2GRAY);
         vector<Point2f> tracked_pts;
-        vector<uchar> status;
+        vector<uchar> states{};
         vector<float> err;
-        CV_Assert(!prev.gray.empty());
+        CV_Assert(!prevFrame.gray.empty());
         CV_Assert(!cur.gray.empty());
-        calcOpticalFlowPyrLK(prev.gray, cur.gray, prev.keyPts,
-                tracked_pts, status, err, winSize, 3,
+        calcOpticalFlowPyrLK(prevFrame.gray, cur.gray, prevFrame.keyPts,
+                tracked_pts, states, err, winSize, 3,
                 termcrit, 0, 0.001);
         vector<pair<int, int>> good_match;
         int k = 0;
         for(int i = 0; i < tracked_pts.size(); ++i) {
-            if(! status[i]) {
+            if(! states[i]) {
                 continue;
             }
             good_match.push_back({i, k});
             tracked_pts[k++] = tracked_pts[i];
         }
         tracked_pts.resize(k);
-        Mat imgMatch = draw_track_match(prev.rgb, prev.keyPts, cur.rgb, tracked_pts, good_match);
+        Mat imgMatch = draw_track_match(prevFrame.rgb, prevFrame.keyPts, cur.rgb, tracked_pts, good_match);
         //cv::imshow("tracked Points", imgMatch);
         cv::imwrite(dst_dir+to_string(i-1) + "--" + to_string(i) + ".jpg", imgMatch);
         //waitKey(0);
@@ -109,7 +109,7 @@ void test() {
         //detect_lines(cur);
         //get_inlier_intersects(cur);
         
-        prev = cur;
+        prevFrame = cur;
     }
 }
 
