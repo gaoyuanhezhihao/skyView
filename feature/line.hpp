@@ -13,4 +13,5 @@ void detect_lines(Frame & f);
 
 bool get_inlier_intersects(Frame & f);
 vector<Vec2f> merge_close_lines(vector<Vec2f> & lines);
+double theta_from_endPoint(const Point2f & pt1, const Point2f & pt2);
 #endif //LINE_H
