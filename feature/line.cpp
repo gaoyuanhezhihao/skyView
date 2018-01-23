@@ -176,38 +176,60 @@ bool predict_lines(vector<pair<int, int>> & line_pts_map, Tracker & tracker, vec
     return true;
 }
 
-//bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_ranges) {
-    //static const double theta_resolution = configs["theta_resolution"];
-    //static const double rho_resolution = configs["rho_resolution"];
+bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_ranges) {
+    static const double theta_resolution = configs["theta_resolution"];
+    static const double rho_resolution = configs["rho_resolution"];
 
-    //const int width = edge_im.cols;
-    //const int height = edge_im.rows;
-    //CvMat c_image = edge_im;
-    //const uchar * image;
-    //image = c_image.data.ptr;
+    const int width = edge_im.cols;
+    const int height = edge_im.rows;
+    CvMat c_image = edge_im;
+    const uchar * image;
+    image = c_image.data.ptr;
 
-    //vector<double> theta_vec;
-    //for(const pair<double, double> & rg: theta_ranges)  {
-        //double t = rg.first;
-        //while(t < rg.second) {
-            //theta_vec.push_back(t);
-            //t += theta_resolution;
-        //}
-    //}
+    vector<double> theta_vec;
+    for(const pair<double, double> & rg: theta_ranges)  {
+        double t = rg.first;
+        while(t < rg.second) {
+            theta_vec.push_back(t);
+            t += theta_resolution;
+        }
+    }
 
-    //int numrho = cvRound(((width + height) * 2 + 1) / rho_resolution);
-    //if(theta_vec.empty()) {
-        //return false;
-    //}
+    int numrho = cvRound(((width + height) * 2 + 1) / rho_resolution);
+    if(theta_vec.empty()) {
+        return false;
+    }
 
-    //int numangle = theta_vec.size();
-    //int * accum = new int[numangle*numrho];
-    //double * Sin = new double[numangle];
-    //double * Cos = new double[numangle];
-    //for(int i = 0; i < numangle; ++i) {
-        //Sin[i] = 
-    //}
+    const float irho_rsv = 1/rho_resolution;
+    int numangle = theta_vec.size();
+    float * tabSin = new float[numangle];
+    float * tabCos = new float[numangle];
+    for(int i = 0; i < numangle; ++i) {
+        double theta = theta_vec[i];
+        tabSin[i] = (float) (sin(theta)*irho_rsv);
+        tabCos[i] = (float) (cos(theta)*irho_rsv);
+    }
 
+    int * accum = new int[(numangle+2)*(numrho+2)];
     //vector<int*> cnt_ptr_vec;
-    ////int numangle = cvRound(CV_PI / theta_resolution);
-//}
+    //for(int i = 0; i < numangle; ++i) {
+        //cnt_ptr_vec[i] = accum + numrho * (i+1);
+    //}
+
+    // stage 1. fill accumulator.
+    const int step = c_image.step;
+    const int zero_rho_idx = (numrho-1)/2;
+    for(int r = 0; r < height; ++r) {
+        for(int c = 0; c < width; ++c) {
+            if(image[r * step + c] != 0) {
+                for(int i = 0; i < numangle; ++i) {
+                    float rho = cvRound(c * tabCos[i] + r * tabSin[i]);
+                    int rho_id = zero_rho_idx + rho;
+                    ++accum[(i+1)* numangle + rho_id+1];
+                }
+            }
+        }
+    }
+    
+    // stage 2. find local maximums
+}
