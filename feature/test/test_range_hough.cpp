@@ -19,10 +19,12 @@ int main(int argc, const char ** argv) {
     cv::line(edge_im, {100, 0}, {100, 470}, Scalar(255));
     cv::imshow("edge_im", edge_im);
     waitKey(0);
-    vector<pair<double, double>> theta_ranges{{0.0, CV_PI}};
+    vector<pair<double, double>> theta_ranges{{0.0, CV_PI*179/180}};
     vector<Vec2f> lines;
     range_hough(edge_im, theta_ranges, 100, lines);
     SHOW(lines.size());
-    cout << "rho = " << lines[0][0] << '\n';
-    cout << "theta = " << lines[0][1] * 180.0/CV_PI << "\n";
+    for(Vec2f& line: lines) {
+        cout << "rho = " << line[0] << '\n';
+        cout << "theta = " << line[1] * 180.0/CV_PI << "\n";
+    }
 }

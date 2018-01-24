@@ -137,7 +137,20 @@ vector<Vec2f> merge_close_lines(vector<Vec2f> & lines) {
 }
 
 double theta_from_endPoint(const Point2f & pt1, const Point2f & pt2) {
-    return atan((pt1.x - pt2.x)/ (pt2.y-pt1.y));
+    if(pt2.y == pt1.y) {
+        return 0.0;
+    }
+    double theta = atan((pt1.x - pt2.x)/ (pt2.y-pt1.y));
+    if(theta < 0.0) {
+        theta += CV_PI;
+    }
+    return theta;
+}
+
+double rho_from_endPoint(const Point2f & pt1, const Point2f & pt2) {
+    double theta = theta_from_endPoint(pt1, pt2);
+    double rho = pt1.x * cos(theta) + pt1.y * sin(theta);
+    return rho;
 }
 
 
@@ -225,34 +238,51 @@ bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_r
                 for(int i = 0; i < numangle; ++i) {
                     int rho_id = cvRound(c * tabCos[i] + r * tabSin[i]);
                     rho_id += zero_rho_idx;
-                    ++accum[(i+1)* numangle + rho_id+1];
+                    ++accum[(i+1)* (numrho+2)+ rho_id+1];
                 }
             }
         }
     }
     
-    vector<int> base_vec;
+    //vector<int> base_vec;
     // stage 2. find local maximums
-    for(int ro = 0; ro < numrho; ++ro) {
-        for(int th = 0; th < numangle; ++th) {
-            int base = (th+1) * (numrho+2) + (ro+1);
+    for(int t = 1; t <= numangle; ++t) {
+        for(int r = 1; r <= numrho; ++r) {
+            int base = t * (numrho+2) + r;
             if(accum[base] > threshold &&
                     accum[base] > accum[base-1] &&
                     accum[base] > accum[base+1] &&
                     accum[base] > accum[base-numrho-2] &&
                     accum[base] > accum[base+numrho+2]) {
-                base_vec.push_back(base);
+                float theta = theta_vec[t-1];
+                float rho = (r-1-zero_rho_idx)* rho_resolution;
+                lines.push_back({rho, theta});
             }
         }
     }
+    //for(int ro = 0; ro < numrho; ++ro) {
+        //for(int th = 0; th < numangle; ++th) {
+            //int base = (th+1) * (numrho+2) + (ro+1);
+            //if(accum[base] > threshold &&
+                    //accum[base] > accum[base-1] &&
+                    //accum[base] > accum[base+1] &&
+                    //accum[base] > accum[base-numrho-2] &&
+                    //accum[base] > accum[base+numrho+2]) {
+                ////base_vec.push_back(base);
+                //float theta = theta_vec[th];
+                //float rho = (ro - zero_rho_idx) * rho_resolution;
+                //lines.push_back({rho, theta});
+            //}
+        //}
+    //}
 
-    const double scale = 1./(numrho+2);
-    for(int base : base_vec) {
-        int theta_id = cvFloor(base * scale) - 1;
-        int rho_id = base - (theta_id+1) * (numrho+2) -1;
-        float theta = theta_vec[theta_id];
-        float rho = (rho_id - zero_rho_idx) * rho_resolution;
-        lines.push_back({rho, theta});
-    }
+    //const double scale = 1./(numrho+2);
+    //for(int base : base_vec) {
+        //int theta_id = cvFloor(base * scale) - 1;
+        //int rho_id = base - (theta_id+1) * (numrho+2) -1;
+        //float theta = theta_vec[theta_id];
+        //float rho = (rho_id - zero_rho_idx) * rho_resolution;
+        //lines.push_back({rho, theta});
+    //}
     return true;
 }
