@@ -176,8 +176,8 @@ bool predict_lines(vector<pair<int, int>> & line_pts_map, Tracker & tracker, vec
     return true;
 }
 
-bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_ranges) {
-    static const double theta_resolution = configs["theta_resolution"];
+bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_ranges, const int threshold, vector<Vec2f> & lines) {
+    static const double theta_resolution = double(configs["theta_resolution"]) * CV_PI / 180;
     static const double rho_resolution = configs["rho_resolution"];
 
     const int width = edge_im.cols;
@@ -223,13 +223,36 @@ bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_r
         for(int c = 0; c < width; ++c) {
             if(image[r * step + c] != 0) {
                 for(int i = 0; i < numangle; ++i) {
-                    float rho = cvRound(c * tabCos[i] + r * tabSin[i]);
-                    int rho_id = zero_rho_idx + rho;
+                    int rho_id = cvRound(c * tabCos[i] + r * tabSin[i]);
+                    rho_id += zero_rho_idx;
                     ++accum[(i+1)* numangle + rho_id+1];
                 }
             }
         }
     }
     
+    vector<int> base_vec;
     // stage 2. find local maximums
+    for(int ro = 0; ro < numrho; ++ro) {
+        for(int th = 0; th < numangle; ++th) {
+            int base = (th+1) * (numrho+2) + (ro+1);
+            if(accum[base] > threshold &&
+                    accum[base] > accum[base-1] &&
+                    accum[base] > accum[base+1] &&
+                    accum[base] > accum[base-numrho-2] &&
+                    accum[base] > accum[base+numrho+2]) {
+                base_vec.push_back(base);
+            }
+        }
+    }
+
+    const double scale = 1./(numrho+2);
+    for(int base : base_vec) {
+        int theta_id = cvFloor(base * scale) - 1;
+        int rho_id = base - (theta_id+1) * (numrho+2) -1;
+        float theta = theta_vec[theta_id];
+        float rho = (rho_id - zero_rho_idx) * rho_resolution;
+        lines.push_back({rho, theta});
+    }
+    return true;
 }
