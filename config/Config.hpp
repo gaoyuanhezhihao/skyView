@@ -53,8 +53,10 @@ class Config_Map{
     private:
         std::unordered_map<string, universal_type> map;
         bool is_inited = false;
+        void read_one_line(string line);
     public:
         void init(const char * fname);
+        void init_by_string(const string s);
         universal_type operator[](const string key); 
 };
 

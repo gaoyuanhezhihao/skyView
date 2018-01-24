@@ -5,6 +5,7 @@
 #include <fstream>
 #include "str_proc.hpp"
 #include <stdexcept>
+#include <sstream>
 using namespace std;
 
 
@@ -32,34 +33,46 @@ string & operator <<(string & dst, universal_type & src) {
 	return dst;
 }
 
+void Config_Map::read_one_line(string line) {
+    if('#' == line[0]) {
+        return ;
+    }
+    size_t split_id = line.find_first_of('=');
+    if(string::npos == split_id) {
+        return;
+    }
+    else {
+        string feature_name = line.substr(0, split_id);
+        trim_both(feature_name);
+        string ftr_v = line.substr(split_id + 1);
+        trim_both(ftr_v);
+        //feature_value.set_value(ftr_v);
+        universal_type ut(feature_name, ftr_v);
+        map.insert(pair<string, universal_type> (feature_name, ut));
+    }
+}
+
+void Config_Map::init_by_string(const string s) {
+    std::istringstream iss(s);
+    string line;
+    while(getline(iss, line)){
+        read_one_line(line);
+    }
+    is_inited = true;
+    return;
+}
+
 void Config_Map::init(const char * fname) {
     string line;
-    string feature_name;
     //unordered_map<string, universal_type> config_map;
     //universal_type feature_value;
-    size_t split_id = 0;
     ifstream config_file(fname);
     if(!config_file) {
         throw std::invalid_argument("failed to read configure file");
     }
     if(config_file.is_open()) {
         while(getline(config_file, line)) {
-            if('#' == line[0]) {
-                continue;
-            }
-            split_id = line.find_first_of('=');
-            if(string::npos == split_id) {
-                break;
-            }
-            else {
-                feature_name = line.substr(0, split_id);
-                trim_both(feature_name);
-                string ftr_v = line.substr(split_id + 1);
-                trim_both(ftr_v);
-                //feature_value.set_value(ftr_v);
-                universal_type ut(feature_name, ftr_v);
-                map.insert(pair<string, universal_type> (feature_name, ut));
-            }
+            read_one_line(line);
         }
     }
     is_inited = true;
