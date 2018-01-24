@@ -1,9 +1,9 @@
 add_executable(test_vo_match test_vo_match.cpp)
-target_link_libraries(test_vo_match libvo libconfig libbase libstereo libfeature)
+target_link_libraries(test_vo_match vo config base stereo feature)
 
 add_executable(test_motion test_motion.cpp)
-target_link_libraries(test_motion libvo libconfig libbase libstereo libfeature)
+target_link_libraries(test_motion vo config base stereo feature)
 
 add_executable(test_vo_chain test_vo_chain.cpp) 
-target_link_libraries(test_vo_chain libvo libconfig libbase libstereo libfeature)
+target_link_libraries(test_vo_chain vo config base stereo feature)
 
