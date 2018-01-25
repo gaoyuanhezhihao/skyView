@@ -16,4 +16,5 @@ vector<Vec2f> merge_close_lines(vector<Vec2f> & lines);
 double theta_from_endPoint(const Point2f & pt1, const Point2f & pt2);
 double rho_from_endPoint(const Point2f & pt1, const Point2f & pt2);
 bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_ranges, const int threshold, vector<Vec2f> & lines);
+void merge_ranges(vector<pair<double, double>> & ranges);
 #endif //LINE_H

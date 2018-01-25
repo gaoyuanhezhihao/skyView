@@ -17,6 +17,24 @@ using namespace std;
 
 const int RHO=0;
 const int THETA=1;
+void merge_ranges(vector<pair<double, double>> & ranges) {
+    if(ranges.empty()) {
+        return ;
+    }
+    std::sort(ranges.begin(), ranges.end());
+    int k = 0;
+    pair<double, double> cur = ranges[0];
+    for(size_t i = 1; i < ranges.size(); ++i) {
+        if(ranges[i].first <= cur.second) {
+            cur.second = max(cur.second, ranges[i].second);
+        }else {
+            ranges[k++] = cur;
+            cur = ranges[i];
+        }
+    }
+    ranges[k++] = cur;
+    ranges.resize(k);
+}
 bool intersect(const Vec2f & l1, const Vec2f & l2, Point2f & pt) {
     const double r1 = l1[0];
     const double theta1 = l1[1];
@@ -50,6 +68,7 @@ bool get_inlier_intersects(Frame & f)  {
     const int sz = f.lines.size();
     cv::Point2f pt;
     //vector<Point2f> inliers;
+    f.line_endPt_id_map.reserve(f.lines.size());
     for(int i = 0; i < sz; ++i) {
         for(int j = i+1; j < sz; ++ j){
             //cv::Mat tmp_img = debug_img.clone();
@@ -60,6 +79,8 @@ bool get_inlier_intersects(Frame & f)  {
                     0.0f <= pt.x && pt.x < img_size.width &&
                     0.0f <= pt.y && pt.y < img_size.height) {
                 f.keyPts.push_back(pt);
+                f.line_endPt_id_map[i].push_back(f.keyPts.size()-1);
+                f.line_endPt_id_map[j].push_back(f.keyPts.size()-1);
                 //vector<Point2f> tmp_pts{pt};
                 //draw_points(tmp_img, tmp_pts);
             }
@@ -154,17 +175,36 @@ double rho_from_endPoint(const Point2f & pt1, const Point2f & pt2) {
 }
 
 
-bool predict_lines(vector<pair<int, int>> & line_pts_map, Tracker & tracker, vector<pair<double, double>> & theta_rgs) {
+bool predict_lines(vector<vector<int>> & line_pts_map, Tracker & tracker, vector<pair<double, double>> & theta_rgs) {
     static const double theta_width = double(configs["theta_width"]) * CV_PI/180;
     const vector<Point2f> & tracked_pts = tracker.get_tracked_pts();
 
     for(size_t i = 0; i < line_pts_map.size(); ++i) {
-        const int u = line_pts_map[i].first;
-        const int v = line_pts_map[i].second;
+        /* find two points in good status */
+        int pt_cnt = 0;
+        int pt_ids[2] = {-1, -2};
+        for(int pt_i: line_pts_map[i]) {
+            if(tracker.check_status(pt_i)) {
+                pt_ids[pt_cnt++] = pt_i;
+            }
 
-        if( !tracker.check_status(u) || !tracker.check_status(v) ) {
+            if(pt_cnt == 2) {
+                break;
+            }
+        }
+
+        if(pt_cnt < 2) {
             continue;
         }
+        const int u = pt_ids[0];
+        const int v = pt_ids[1];
+
+        //const int u = line_pts_map[i].first;
+        //const int v = line_pts_map[i].second;
+
+        //if( !tracker.check_status(u) || !tracker.check_status(v) ) {
+            //continue;
+        //}
         const double theta = theta_from_endPoint(tracked_pts[u], tracked_pts[v]);
         double theta_l = max(0.0, theta - theta_width);
         double theta_r = min(2*CV_PI, theta+ theta_width);
@@ -175,19 +215,10 @@ bool predict_lines(vector<pair<int, int>> & line_pts_map, Tracker & tracker, vec
         return false;
     }
     /* merge overlaped ranges */
-    std::sort(theta_rgs.begin(), theta_rgs.end());
-    int k = 0;
-    pair<double, double> cur = theta_rgs[0];
-    for(size_t i = 1; i < theta_rgs.size(); ++i) {
-        if(theta_rgs[i].first <= cur.second) {
-            cur.second = max(cur.second, theta_rgs[i].second);
-        }else {
-            theta_rgs[k++] = cur;
-            cur = theta_rgs[i];
-        }
-    }
+    merge_ranges(theta_rgs);
     return true;
 }
+
 
 bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_ranges, const int threshold, vector<Vec2f> & lines) {
     static const double theta_resolution = double(configs["theta_resolution"]) * CV_PI / 180;

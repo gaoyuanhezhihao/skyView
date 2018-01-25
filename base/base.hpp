@@ -17,6 +17,7 @@ struct Frame{
     cv::Mat edge;
     std::vector<cv::Point2f> keyPts;
     std::vector<cv::Vec2f> lines;
+    std::vector<std::vector<int>> line_endPt_id_map;
     cv::Mat R_global;
     cv::Mat t_global;
 
