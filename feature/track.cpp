@@ -19,3 +19,7 @@ bool Tracker::run() {
             termcrit, 0, 0.001);
     return true;
 }
+
+match_pts(Tracker & tracker, vector<Point2f> & new_keyPoints) {
+    
+}
