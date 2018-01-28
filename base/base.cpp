@@ -25,6 +25,12 @@ void draw_points(cv::Mat & img, const vector<Point2f> & pts) {
     }
 }
 
+void draw_points(cv::Mat & img, const vector<Point2f> & pts, cv::Scalar color) {
+    for(const Point2f& pt: pts) {
+        cv::circle(img, Point(pt.x, pt.y), 5, color, 2);
+    }
+}
+
 void draw_lines(cv::Mat & img, const vector<Vec2f> & lines, cv::Scalar color) {
     for( size_t i = 0; i < lines.size(); i++ ) {
         float rho = lines[i][0], theta = lines[i][1];
@@ -45,3 +51,9 @@ void draw_linesP(cv::Mat & img, const vector<Vec4i> & lines) {
         line(img, Point(l[0], l[1]), Point(l[2], l[3]), rand_color(), 1, CV_AA);
     }
 }
+
+float street_dist(const Point2f & p1, const Point2f & p2) {
+    return abs(p1.x - p2.x) + abs(p1.y - p2.y);
+}
+
+

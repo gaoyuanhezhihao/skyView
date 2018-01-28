@@ -1,4 +1,4 @@
-set(SRC base.cpp base.hpp debug.cpp debug.hpp)
+set(SRC base.cpp base.hpp debug.cpp debug.hpp core.hpp core.cpp)
 add_library(base STATIC ${SRC})
 target_link_libraries(base )
 target_link_libraries(base config)
