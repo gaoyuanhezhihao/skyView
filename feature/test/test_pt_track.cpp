@@ -82,7 +82,7 @@ void test() {
         vector<float> err;
         CV_Assert(!prevFrame.gray.empty());
         CV_Assert(!cur.gray.empty());
-        calcOpticalFlowPyrLK(prevFrame.gray, cur.gray, prevFrame.keyPts,
+        calcOpticalFlowPyrLK(prevFrame.edge, cur.edge, prevFrame.keyPts,
                 tracked_pts, states, err, winSize, 3,
                 termcrit, 0, 0.001);
         vector<pair<int, int>> good_match;

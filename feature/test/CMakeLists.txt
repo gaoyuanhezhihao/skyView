@@ -4,6 +4,9 @@ target_link_libraries(test_pt_track config base stereo feature)
 add_executable(test_range_hough test_range_hough.cpp)
 target_link_libraries(test_range_hough config base stereo feature)
 
+add_executable(test_range_hough_track test_range_hough_track.cpp)
+target_link_libraries(test_range_hough_track config base stereo feature)
+
 
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)

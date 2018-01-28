@@ -10,6 +10,7 @@
 #include "panoramas.h"
 #include "Config.hpp"
 #include "base.hpp"
+#include "core.hpp"
 using namespace cv;
 using namespace std;
 
@@ -90,4 +91,18 @@ bool calibrate(){
     trsf2sky_view(src_img, H, cols_sky_im, rows_sky_im);
     dump_mat("H_mat.yml", "H_mat", H);
     return true;
+}
+
+void NewFrame::read_frame(){
+    static const std::string samples_dir = configs["samples"];
+    static const std::string dst_dir = configs["result_dir"];
+    static const int cols_sky_im = configs["cols_sky_im"];
+    static const int rows_sky_im = configs["rows_sky_im"];
+
+    cv::Mat raw_im = cv::imread(samples_dir + to_string(_id) + ".jpg");
+    _rgb = get_sky_view(raw_im, cols_sky_im, rows_sky_im);
+
+    cvtColor(_rgb, _gray, CV_BGR2GRAY);
+    blur(_gray, _gray, Size(5, 5));
+    Canny(_gray, _edge, 50, 100, 5);
 }

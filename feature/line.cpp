@@ -6,11 +6,14 @@
 #include <cmath>
 #include <algorithm>
 #include <list>
+#include <cstring>
+#include <cstdlib>
 #include "line.hpp"
 #include "debug.hpp"
 #include "Config.hpp"
 #include "base.hpp"
 #include "track.hpp"
+#include "core.hpp"
 
 using namespace cv;
 using namespace std;
@@ -63,12 +66,41 @@ bool intersect(const Vec2f & l1, const Vec2f & l2, Point2f & pt) {
     return true;
 }
 
+bool get_inlier_intersects(const vector<Vec2f> & lines, vector<Point2f> & keyPts, vector<vector<int>> & line_endPt_id_map, const cv::Size & img_size) {
+    const int sz = lines.size();
+    cv::Point2f pt;
+    //vector<Point2f> inliers;
+    //line_endPt_id_map.reserve(sz);
+    line_endPt_id_map = vector<vector<int>>(sz);
+    for(int i = 0; i < sz; ++i) {
+        for(int j = i+1; j < sz; ++ j){
+            //cv::Mat tmp_img = debug_img.clone();
+            //cout << "=====" << lines[i] << "---" << lines[j] << endl;
+            //vector<Vec2f> tmp_lines{lines[i], lines[j]};
+            //draw_lines(tmp_img, tmp_lines);
+            if(intersect(lines[i], lines[j], pt) &&
+                    0.0f <= pt.x && pt.x < img_size.width &&
+                    0.0f <= pt.y && pt.y < img_size.height) {
+                keyPts.push_back(pt);
+                line_endPt_id_map[i].push_back(keyPts.size()-1);
+                line_endPt_id_map[j].push_back(keyPts.size()-1);
+                //vector<Point2f> tmp_pts{pt};
+                //draw_points(tmp_img, tmp_pts);
+            }
+            //cv::imshow("debug img", tmp_img);
+            //cv::waitKey(0);
+        }
+    }
+    return true;
+}
 bool get_inlier_intersects(Frame & f)  {
     const cv::Size img_size = f.rgb.size();
     const int sz = f.lines.size();
     cv::Point2f pt;
     //vector<Point2f> inliers;
-    f.line_endPt_id_map.reserve(f.lines.size());
+    //f.line_endPt_id_map.reserve(f.lines.size());
+    //f.line_endPt_id_map.reserve(f.lines.size());
+    f.line_endPt_id_map = vector<vector<int>>(sz);
     for(int i = 0; i < sz; ++i) {
         for(int j = i+1; j < sz; ++ j){
             //cv::Mat tmp_img = debug_img.clone();
@@ -103,7 +135,7 @@ void detect_lines(Frame & f) {
     CV_Assert(!f.rgb.empty());
     cvtColor(f.rgb, f.gray, CV_BGR2GRAY);
     blur(f.gray, f.gray, Size(5,5) );
-    Canny(f.gray, f.gray, 50, 100, 5);
+    Canny(f.gray, f.edge, 50, 100, 5);
     //Mat cdst;
     //cvtColor(f.gray, cdst, CV_GRAY2BGR);
     //cv::imshow("edge", cdst);
@@ -111,7 +143,7 @@ void detect_lines(Frame & f) {
     //vector<Vec4i> linesP; 
     //HoughLinesP(f.gray, linesP, 1, CV_PI/180, 50, 50, 10 ); 
     //vector<Vec2f> lines;
-    HoughLines(f.gray, f.lines, 0.5, CV_PI/180, 200, 0, 0 );
+    HoughLines(f.edge, f.lines, 0.5, CV_PI/180, 200, 0, 0 );
 }
 
 
@@ -175,8 +207,8 @@ double rho_from_endPoint(const Point2f & pt1, const Point2f & pt2) {
 }
 
 
-bool predict_lines(vector<vector<int>> & line_pts_map, Tracker & tracker, vector<pair<double, double>> & theta_rgs) {
-    static const double theta_width = double(configs["theta_width"]) * CV_PI/180;
+bool predict_lines(const vector<vector<int>> & line_pts_map, Tracker & tracker, vector<pair<double, double>> & theta_rgs) {
+    static const double theta_width = double(configs["theta_predict_width"]) * CV_PI/180;
     const vector<Point2f> & tracked_pts = tracker.get_tracked_pts();
 
     for(size_t i = 0; i < line_pts_map.size(); ++i) {
@@ -220,10 +252,12 @@ bool predict_lines(vector<vector<int>> & line_pts_map, Tracker & tracker, vector
 }
 
 
-bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_ranges, const int threshold, vector<Vec2f> & lines) {
+bool range_hough(const cv::Mat & edge_im, const vector<pair<double, double>> & theta_ranges, const int threshold, vector<Vec2f> & lines) {
     static const double theta_resolution = double(configs["theta_resolution"]) * CV_PI / 180;
     static const double rho_resolution = configs["rho_resolution"];
 
+    //const string dst_dir = configs["result_dir"];
+    //imwrite(dst_dir+"range_hough_debug.jpg", edge_im);
     const int width = edge_im.cols;
     const int height = edge_im.rows;
     CvMat c_image = edge_im;
@@ -255,6 +289,7 @@ bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_r
     }
 
     int * accum = new int[(numangle+2)*(numrho+2)];
+    memset(accum, 0, sizeof(accum[0]) * (numangle+2)*(numrho+2));
     //vector<int*> cnt_ptr_vec;
     //for(int i = 0; i < numangle; ++i) {
         //cnt_ptr_vec[i] = accum + numrho * (i+1);
@@ -277,6 +312,9 @@ bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_r
     
     //vector<int> base_vec;
     // stage 2. find local maximums
+    float max_theta = 0.0;
+    float max_rho = 0.0;
+    double max_cnt = 0;
     for(int t = 1; t <= numangle; ++t) {
         for(int r = 1; r <= numrho; ++r) {
             int base = t * (numrho+2) + r;
@@ -289,8 +327,17 @@ bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_r
                 float rho = (r-1-zero_rho_idx)* rho_resolution;
                 lines.push_back({rho, theta});
             }
+            if(accum[base] > max_cnt) {
+                max_cnt = accum[base];
+                max_theta = theta_vec[t-1];
+                max_rho = (r-1-zero_rho_idx)* rho_resolution;
+            }
         }
     }
+    cout << "range_hough: \n"; 
+    SHOW(max_cnt);
+    SHOW(max_theta);
+    SHOW(max_rho);
     //for(int ro = 0; ro < numrho; ++ro) {
         //for(int th = 0; th < numangle; ++th) {
             //int base = (th+1) * (numrho+2) + (ro+1);
@@ -315,5 +362,37 @@ bool range_hough(cv::Mat & edge_im, const vector<pair<double, double>> & theta_r
         //float rho = (rho_id - zero_rho_idx) * rho_resolution;
         //lines.push_back({rho, theta});
     //}
+    return true;
+}
+
+bool NewFrame::calc_keyPts() {
+    get_inlier_intersects(_lines, _KeyPts, _Line_endPt_id_map, _rgb.size());
+    return true;
+}
+
+
+bool NewFrame::detect_lines(const vector<pair<double, double>> & theta_rgs) {
+    static const int hough_thres = configs["hough_threshold"];
+    cout << "before range_hough line cout =" << _lines.size() << endl;
+    if(!range_hough(_edge, theta_rgs, hough_thres, _lines)){
+        return false;
+    }
+    cout << "range_hough line count="  << _lines.size() << endl;
+
+    _lines = merge_close_lines(_lines);
+    cout << "after merge line count = " << _lines.size() << endl;
+    return true;
+}
+
+bool NewFrame::detect_lines() {
+    static const int hough_thres = configs["hough_threshold"];
+    cout << "hough_thres = " << hough_thres << endl;
+
+    HoughLines(_edge, _lines, 0.5, CV_PI/180, hough_thres, 0, 0 );
+    //if(!range_hough(_edge, theta_rgs, hough_thres, _lines)){
+        //return false;
+    //}
+
+    _lines = merge_close_lines(_lines);
     return true;
 }
