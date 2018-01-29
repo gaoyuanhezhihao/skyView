@@ -12,6 +12,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+//#include <glog/logging.h>
+
 #include "base.hpp"
 #include "Config.hpp"
 #include "debug.hpp"
@@ -40,6 +42,7 @@ using namespace std;
 //}
 
 void test() {
+    static const int init_keyPt_thres = configs["init_keyPt_thres"];
     static const string samples_dir = configs["samples"];
     const string dst_dir = configs["result_dir"];
     const int id_start = configs["start_id"];
@@ -47,11 +50,11 @@ void test() {
 
     NewFrame prevFrame{id_start};
     prevFrame.read_frame();
-    prevFrame.detect_lines();
-    prevFrame.calc_keyPts();
+    init_frame(prevFrame);
+    //prevFrame.detect_lines();
+    //prevFrame.calc_keyPts();
     SHOW(prevFrame.lines().size());
     SHOW(prevFrame.keyPts().size());
-    int fail_track_cnt = 0;
     for(int i = id_start+1; i <= id_last; ++i) {
         cout << prevFrame.get_id() << "--" << i << endl;
         NewFrame cur{i};
@@ -62,10 +65,11 @@ void test() {
         Tracker tk(prevFrame.keyPts(), prevFrame.edge(),
                 cur.edge());
         if(! tk.run()){
-            ++ fail_track_cnt;
+            if(init_frame(cur)){
+                swap(prevFrame, cur);
+            }
             continue;
         }
-        fail_track_cnt = 0;
         cv::Mat imgTrack = tk.draw();
         imwrite(dst_dir+to_string(i-1) + "--" + to_string(i) + "_track.jpg", imgTrack);
         //cv::imshow("track result", imgTrack);
@@ -74,23 +78,33 @@ void test() {
         cout << "predicting" << endl;
         vector<pair<double, double>> theta_rgs;
         if(!predict_lines(prevFrame.line_endPt_id_map(), tk, theta_rgs)){
+            if(init_frame(cur)){
+                swap(prevFrame, cur);
+            }
             continue;
         }
-        for(pair<double, double> & rg: theta_rgs) {
-            cout << rg.first << ", " << rg.second << "\n";
-        }
+        //for(pair<double, double> & rg: theta_rgs) {
+            //cout << rg.first << ", " << rg.second << "\n";
+        //}
 
 
 
 
         cout << "detecting lines" << endl;
         if(!cur.detect_lines(theta_rgs)) {
+            if(init_frame(cur)){
+                swap(prevFrame, cur);
+            }
             continue;
         }
-        cout << "count of lines=" << cur.lines().size() << endl;
+        //cout << "count of lines=" << cur.lines().size() << endl;
+        SHOW(cur.lines().size());
 
         cout << "calc keyPts" << endl;
-        if(!cur.calc_keyPts()) {
+        if(!cur.calc_keyPts() || int(cur.keyPts().size()) < init_keyPt_thres) {
+            if(init_frame(cur)){
+                swap(prevFrame, cur);
+            }
             continue;
         }
         SHOW(cur.keyPts().size());
@@ -99,18 +113,22 @@ void test() {
         cout << " matching " << endl;
         shared_ptr<NewMatch> pMch = match_pts(tk, prevFrame, cur);
         if(nullptr == pMch) {
-            continue;
             cout << "fail match\n";
+            if(init_frame(cur)){
+                swap(prevFrame, cur);
+            }
+            continue;
         }
         cout << "success match\n";
 
         cv::Mat img_mch = pMch->draw();
-        cv::imwrite(dst_dir+to_string(i-1) + "--" + to_string(i) + ".jpg", img_mch);
+        cv::imwrite(dst_dir+to_string(i-1) + "--" + to_string(i) + "_match.jpg", img_mch);
         swap(prevFrame, cur);
     }
 }
 
 int main(int argc, char ** argv) {
+    //google::InitGoogleLogging(argv[0]);
     if( argc != 2) {
         cout <<" Error! not enough param \n Usage: runner config.txt" << endl;
         return -1;

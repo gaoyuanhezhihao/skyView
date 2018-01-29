@@ -80,7 +80,7 @@ cv::Mat Tracker::draw(){
     //}
 
     int good_track_cnt = 0;
-    SHOW(_old_pts.size());
+    //SHOW(_old_pts.size());
     for(size_t i = 0; i < _states.size(); ++i) {
         const Point2f & p1 = _old_pts[i];
         if(!_states[i]) {
@@ -93,7 +93,7 @@ cv::Mat Tracker::draw(){
         cv::line(imgTrack, p1, p2, rand_color(), 1, CV_AA);
         ++ good_track_cnt;
     }
-    cout << "good_track_cnt=" << good_track_cnt << endl;
+    //cout << "good_track_cnt=" << good_track_cnt << endl;
 
     return imgTrack;
 }

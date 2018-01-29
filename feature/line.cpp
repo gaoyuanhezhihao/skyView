@@ -20,6 +20,12 @@ using namespace std;
 
 const int RHO=0;
 const int THETA=1;
+bool init_frame(NewFrame & f) {
+    static const int init_keyPt_thres = configs["init_keyPt_thres"];
+    f.detect_lines();
+    f.calc_keyPts();
+    return int(f.keyPts().size()) > init_keyPt_thres;
+}
 void merge_ranges(vector<pair<double, double>> & ranges) {
     if(ranges.empty()) {
         return ;
@@ -312,9 +318,9 @@ bool range_hough(const cv::Mat & edge_im, const vector<pair<double, double>> & t
     
     //vector<int> base_vec;
     // stage 2. find local maximums
-    float max_theta = 0.0;
-    float max_rho = 0.0;
-    double max_cnt = 0;
+    //float max_theta = 0.0;
+    //float max_rho = 0.0;
+    //double max_cnt = 0;
     for(int t = 1; t <= numangle; ++t) {
         for(int r = 1; r <= numrho; ++r) {
             int base = t * (numrho+2) + r;
@@ -327,17 +333,17 @@ bool range_hough(const cv::Mat & edge_im, const vector<pair<double, double>> & t
                 float rho = (r-1-zero_rho_idx)* rho_resolution;
                 lines.push_back({rho, theta});
             }
-            if(accum[base] > max_cnt) {
-                max_cnt = accum[base];
-                max_theta = theta_vec[t-1];
-                max_rho = (r-1-zero_rho_idx)* rho_resolution;
-            }
+            //if(accum[base] > max_cnt) {
+                //max_cnt = accum[base];
+                //max_theta = theta_vec[t-1];
+                //max_rho = (r-1-zero_rho_idx)* rho_resolution;
+            //}
         }
     }
-    cout << "range_hough: \n"; 
-    SHOW(max_cnt);
-    SHOW(max_theta);
-    SHOW(max_rho);
+    //cout << "range_hough: \n"; 
+    //SHOW(max_cnt);
+    //SHOW(max_theta);
+    //SHOW(max_rho);
     //for(int ro = 0; ro < numrho; ++ro) {
         //for(int th = 0; th < numangle; ++th) {
             //int base = (th+1) * (numrho+2) + (ro+1);
@@ -373,20 +379,20 @@ bool NewFrame::calc_keyPts() {
 
 bool NewFrame::detect_lines(const vector<pair<double, double>> & theta_rgs) {
     static const int hough_thres = configs["hough_threshold"];
-    cout << "before range_hough line cout =" << _lines.size() << endl;
+    //cout << "before range_hough line cout =" << _lines.size() << endl;
     if(!range_hough(_edge, theta_rgs, hough_thres, _lines)){
         return false;
     }
-    cout << "range_hough line count="  << _lines.size() << endl;
+    //cout << "range_hough line count="  << _lines.size() << endl;
 
     _lines = merge_close_lines(_lines);
-    cout << "after merge line count = " << _lines.size() << endl;
+    //cout << "after merge line count = " << _lines.size() << endl;
     return true;
 }
 
 bool NewFrame::detect_lines() {
     static const int hough_thres = configs["hough_threshold"];
-    cout << "hough_thres = " << hough_thres << endl;
+    //cout << "hough_thres = " << hough_thres << endl;
 
     HoughLines(_edge, _lines, 0.5, CV_PI/180, hough_thres, 0, 0 );
     //if(!range_hough(_edge, theta_rgs, hough_thres, _lines)){
