@@ -5,6 +5,7 @@
 
 #include "Config.hpp"
 #include "line.hpp"
+#include "range_hough.hpp"
 
 using namespace std;
 using namespace cv;

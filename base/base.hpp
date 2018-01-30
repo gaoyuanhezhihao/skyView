@@ -43,4 +43,6 @@ void draw_lines(cv::Mat & img, const std::vector<cv::Vec2f> & lines, cv::Scalar 
 void draw_points(cv::Mat & img, const std::vector<cv::Point2f> & pts);
 void draw_points(cv::Mat & img, const std::vector<cv::Point2f> & pts, cv::Scalar color);
 float street_dist(const cv::Point2f & p1, const cv::Point2f & p2);
+void set_cout_default();
+void redirect_cout();
 #endif //BASE_H

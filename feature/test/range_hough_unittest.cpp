@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include "line.hpp"
 #include "Config.hpp"
+#include "range_hough.hpp"
 #include <string>
 #include <algorithm>
 using namespace std;

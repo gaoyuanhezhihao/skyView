@@ -22,25 +22,25 @@
 
 using namespace cv;
 using namespace std;
-std::streambuf *coutbuf = nullptr;
-std::shared_ptr<std::ofstream> p_out = nullptr;
+//std::streambuf *coutbuf = nullptr;
+//std::shared_ptr<std::ofstream> p_out = nullptr;
 void preprocess(Frame & f) {
     detect_lines(f);
     f.lines = merge_close_lines(f.lines);
     get_inlier_intersects(f);
 }
 
-void redirect_cout() {
-    const string dst_dir = configs["result_dir"];
-    //std::ofstream out(dst_dir+"cout.txt");
-    p_out = std::make_shared<std::ofstream>(dst_dir+"cout.txt");
-    coutbuf= std::cout.rdbuf(); //save old buf
-    std::cout.rdbuf(p_out->rdbuf()); 
-}
+//void redirect_cout() {
+    //const string dst_dir = configs["result_dir"];
+    ////std::ofstream out(dst_dir+"cout.txt");
+    //p_out = std::make_shared<std::ofstream>(dst_dir+"cout.txt");
+    //coutbuf= std::cout.rdbuf(); //save old buf
+    //std::cout.rdbuf(p_out->rdbuf()); 
+//}
 
-void set_cout_default() {
-    std::cout.rdbuf(coutbuf);
-}
+//void set_cout_default() {
+    //std::cout.rdbuf(coutbuf);
+//}
 
 void test() {
     const string dst_dir = configs["result_dir"];

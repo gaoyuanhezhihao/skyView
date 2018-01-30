@@ -21,6 +21,7 @@
 #include "stereo.hpp"
 #include "track.hpp"
 #include "core.hpp"
+#include "range_hough.hpp"
 
 using namespace cv;
 using namespace std;
@@ -61,6 +62,7 @@ void test() {
     const int id_start = configs["start_id"];
     const int id_last = configs["last_id"];
 
+    redirect_cout();
     NewFrame prevFrame{id_start};
     prevFrame.read_frame();
     init_frame(prevFrame);
@@ -145,6 +147,8 @@ void test() {
         cv::imwrite(dst_dir+"match_"+to_string(i-1) + "--" + to_string(i) + ".jpg", img_mch);
         swap(prevFrame, cur);
     }
+
+    set_cout_default();
 }
 
 int main(int argc, char ** argv) {

@@ -1,3 +1,5 @@
+#include <memory>
+#include <fstream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -57,3 +59,15 @@ float street_dist(const Point2f & p1, const Point2f & p2) {
 }
 
 
+std::streambuf *coutbuf = nullptr;
+std::shared_ptr<std::ofstream> p_out = nullptr;
+void redirect_cout() {
+    const string dst_dir = configs["result_dir"];
+    //std::ofstream out(dst_dir+"cout.txt");
+    p_out = std::make_shared<std::ofstream>(dst_dir+"cout.txt");
+    coutbuf= std::cout.rdbuf(); //save old buf
+    std::cout.rdbuf(p_out->rdbuf()); 
+}
+void set_cout_default() {
+    std::cout.rdbuf(coutbuf);
+}
