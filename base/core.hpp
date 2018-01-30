@@ -69,7 +69,7 @@ class NewFrame{
             //return *_pLines;
             return _lines;
         }
-        int get_id() {
+        int get_id() const{
             return _id;
         }
 

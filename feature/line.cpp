@@ -160,6 +160,14 @@ vector<Vec2f> merge_close_lines(vector<Vec2f> & lines) {
     if(lines.size() < 2) {
         return lines;
     }
+
+    for(size_t i = 0; i < lines.size(); ++i) {
+        if(lines[i][0] < 0.0) {
+            lines[i][0] = -lines[i][0];
+            lines[i][1] = lines[i][1] - CV_PI;
+        }
+    } 
+
     auto cmpor = [](const Vec2f & l1, const Vec2f & l2) {
         return l1[0] == l2[0] ? l1[1] < l2[1] : l1[0] < l2[0];
     };
@@ -212,9 +220,23 @@ double rho_from_endPoint(const Point2f & pt1, const Point2f & pt2) {
     return rho;
 }
 
+void add_theta_ranges(const double theta, vector<pair<double, double>> & theta_rgs) {
+    static const double theta_width = double(configs["theta_predict_width"]) * CV_PI/180;
+    double theta_l = theta - theta_width;
+    double theta_r = theta+ theta_width;
+
+    if(theta_l < 0.0) {
+        theta_rgs.emplace_back(CV_PI + theta_l, CV_PI);
+        theta_rgs.emplace_back(0.0, theta_r);
+    }else if(theta_r > CV_PI) {
+        theta_rgs.emplace_back(0.0, theta_r - CV_PI);
+        theta_rgs.emplace_back(theta_l, CV_PI);
+    }else {
+        theta_rgs.emplace_back(theta_l, theta_r);
+    }
+}
 
 bool predict_lines(const vector<vector<int>> & line_pts_map, Tracker & tracker, vector<pair<double, double>> & theta_rgs) {
-    static const double theta_width = double(configs["theta_predict_width"]) * CV_PI/180;
     const vector<Point2f> & tracked_pts = tracker.get_tracked_pts();
 
     for(size_t i = 0; i < line_pts_map.size(); ++i) {
@@ -244,9 +266,10 @@ bool predict_lines(const vector<vector<int>> & line_pts_map, Tracker & tracker, 
             //continue;
         //}
         const double theta = theta_from_endPoint(tracked_pts[u], tracked_pts[v]);
-        double theta_l = max(0.0, theta - theta_width);
-        double theta_r = min(2*CV_PI, theta+ theta_width);
-        theta_rgs.emplace_back(theta_l, theta_r);
+        add_theta_ranges(theta, theta_rgs);
+        /* vertical line*/
+        double v_theta = theta>CV_PI/2 ? theta-CV_PI/2: theta+CV_PI/2;
+        add_theta_ranges(v_theta, theta_rgs);
     }
 
     if(theta_rgs.empty()) {
@@ -262,13 +285,15 @@ bool range_hough(const cv::Mat & edge_im, const vector<pair<double, double>> & t
     static const double theta_resolution = double(configs["theta_resolution"]) * CV_PI / 180;
     static const double rho_resolution = configs["rho_resolution"];
 
+    SHOW(theta_resolution);
+    SHOW(rho_resolution);
     //const string dst_dir = configs["result_dir"];
     //imwrite(dst_dir+"range_hough_debug.jpg", edge_im);
     const int width = edge_im.cols;
     const int height = edge_im.rows;
-    CvMat c_image = edge_im;
-    const uchar * image;
-    image = c_image.data.ptr;
+    //CvMat c_image = edge_im;
+    const uchar * image = edge_im.ptr();
+    //image = c_image.data.ptr;
 
     vector<double> theta_vec;
     for(const pair<double, double> & rg: theta_ranges)  {
@@ -302,7 +327,7 @@ bool range_hough(const cv::Mat & edge_im, const vector<pair<double, double>> & t
     //}
 
     // stage 1. fill accumulator.
-    const int step = c_image.step;
+    const int step = edge_im.step;
     const int zero_rho_idx = (numrho-1)/2;
     for(int r = 0; r < height; ++r) {
         for(int c = 0; c < width; ++c) {
@@ -340,6 +365,21 @@ bool range_hough(const cv::Mat & edge_im, const vector<pair<double, double>> & t
             //}
         }
     }
+
+    /* debug */
+    for(int t = 1; t <= numangle; ++t) {
+        int max_cnt = 0;
+        double rho_best = 0.0;
+        for(int r = 1; r <= numrho; ++r) {
+            int base = t * (numrho+2) + r;
+            if(accum[base] > max_cnt) {
+                max_cnt = accum[base];
+                rho_best = (r-1-zero_rho_idx)* rho_resolution;
+            }
+        }
+        cout << "theta:" << theta_vec[t-1] << ", max_cnt=" << max_cnt << ", rho_best=" << rho_best << '\n';
+    }
+    /* ------*/
     //cout << "range_hough: \n"; 
     //SHOW(max_cnt);
     //SHOW(max_theta);
@@ -368,6 +408,9 @@ bool range_hough(const cv::Mat & edge_im, const vector<pair<double, double>> & t
         //float rho = (rho_id - zero_rho_idx) * rho_resolution;
         //lines.push_back({rho, theta});
     //}
+    delete[] tabCos;
+    delete[] tabSin;
+    delete[] accum;
     return true;
 }
 
@@ -383,7 +426,11 @@ bool NewFrame::detect_lines(const vector<pair<double, double>> & theta_rgs) {
     if(!range_hough(_edge, theta_rgs, hough_thres, _lines)){
         return false;
     }
-    //cout << "range_hough line count="  << _lines.size() << endl;
+    cout << "range_hough line count="  << _lines.size() << endl;
+    cout << "range hough detected lines:\n";
+    for(const Vec2f & l : _lines) {
+        cout << l[0] << ", " << l[1] << '\n';
+    }
 
     _lines = merge_close_lines(_lines);
     //cout << "after merge line count = " << _lines.size() << endl;
