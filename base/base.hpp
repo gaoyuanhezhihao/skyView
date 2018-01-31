@@ -6,9 +6,18 @@
 #include <vector>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <boost/filesystem.hpp>
 
 const cv::Scalar GREEN(0, 255, 0);
 const cv::Scalar RED(0, 0, 255);
+
+class ImgLogger{
+    public:
+        ImgLogger(const std::string dst_dir, const std::string name); 
+        void save(const cv::Mat & img, const int id);
+    private:
+        boost::filesystem::path _dir;
+};
 
 struct Frame{
     int id;

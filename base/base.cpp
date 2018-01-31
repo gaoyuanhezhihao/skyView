@@ -4,11 +4,13 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
+#include <boost/filesystem.hpp>
 #include "base.hpp"
 #include "Config.hpp"
 
 using namespace std;
 using namespace cv;
+namespace FS=boost::filesystem;
 cv::Scalar rand_color() {
     static cv::RNG rng(12345);
     return cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
@@ -71,3 +73,20 @@ void redirect_cout() {
 void set_cout_default() {
     std::cout.rdbuf(coutbuf);
 }
+
+
+ImgLogger::ImgLogger(const string dst_dir, const std::string name){
+    FS::path dst_path(dst_dir);
+    FS::path dst_name(name);
+    _dir = dst_dir/dst_name;
+    FS::remove_all(_dir);
+    FS::create_directories(_dir);
+}
+
+void ImgLogger::save(const cv::Mat & img, const int id) {
+    boost::filesystem::path fname(to_string(id)+".jpg");
+    FS::path p = _dir / fname;
+    //imwrite(img, p.string());
+    imwrite(p.string(), img);
+}
+
