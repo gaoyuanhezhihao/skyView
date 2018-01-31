@@ -20,9 +20,10 @@ cv::Mat NewMatch::draw() const {
     for(const pair<int, int> & mch: ids) {
         Point pt1(kp1[mch.first].x, kp1[mch.first].y);
         Point pt2(kp2[mch.second].x+w1, kp2[mch.second].y);
-        cv::circle(imgMatches, pt1, 5, GREEN, 2);
-        cv::circle(imgMatches, pt2, 5, GREEN, 2);
-        cv::line(imgMatches, pt1, pt2, rand_color(), 1, CV_AA);
+        cv::Scalar color = rand_color();
+        cv::circle(imgMatches, pt1, 5, color, 2);
+        cv::circle(imgMatches, pt2, 5, color, 2);
+        cv::line(imgMatches, pt1, pt2, color, 1, CV_AA);
     }
     return imgMatches;
 }

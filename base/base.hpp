@@ -14,7 +14,8 @@ const cv::Scalar RED(0, 0, 255);
 class ImgLogger{
     public:
         ImgLogger(const std::string dst_dir, const std::string name); 
-        void save(const cv::Mat & img, const int id);
+        void save(const cv::Mat & img, const int id) const;
+        void save(const cv::Mat & img, const std::string name) const;
     private:
         boost::filesystem::path _dir;
 };

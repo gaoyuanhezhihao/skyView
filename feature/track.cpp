@@ -36,6 +36,7 @@ bool Tracker::run() {
 }
 
 shared_ptr<NewMatch> match_pts(const Tracker & tracker, const NewFrame & prevF, const NewFrame & curF) {
+    static const double dist_thres = configs["track_match_dist_thres"];
     const vector<Point2f> & track_pts = tracker.ref_tracked_pts();
     const vector<uchar> & track_status = tracker.ref_status();
     const vector<Point2f> & new_keyPts = curF.keyPts();
@@ -60,7 +61,7 @@ shared_ptr<NewMatch> match_pts(const Tracker & tracker, const NewFrame & prevF, 
                 match_id = k;
             }
         }
-        if(-1 != match_id) {
+        if(-1 != match_id && min_dist < dist_thres) {
             pMch->add(i, match_id);
         }
     }

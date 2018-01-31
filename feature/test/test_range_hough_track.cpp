@@ -12,6 +12,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+#include <boost/format.hpp>
 //#include <glog/logging.h>
 
 #include "base.hpp"
@@ -44,21 +45,29 @@ using namespace std;
 
 void log_line_img(const NewFrame & f) {
     static const string dst_dir = configs["result_dir"];
-    cv::Mat line_img = f.rgb();
+    static ImgLogger im_log(dst_dir, "line");
+    cv::Mat line_img = f.rgb().clone();
     draw_lines(line_img, f.lines(), GREEN);
-    imwrite(dst_dir+"line_"+to_string(f.get_id())+".jpg", line_img);
+    im_log.save(line_img, f.get_id());
+    //imwrite(dst_dir+"line_"+to_string(f.get_id())+".jpg", line_img);
 }
 
 void log_keyPt_img(const NewFrame & f) {
     static const string dst_dir = configs["result_dir"];
-    cv::Mat keyPt_img = f.rgb();
+    static ImgLogger im_log(dst_dir, "line");
+
+    cv::Mat keyPt_img = f.rgb().clone();
     draw_points(keyPt_img, f.keyPts());
-    imwrite(dst_dir+"keyPt_"+to_string(f.get_id()) + ".jpg", keyPt_img);
+    im_log.save(keyPt_img, f.get_id());
+    //imwrite(dst_dir+"keyPt_"+to_string(f.get_id()) + ".jpg", keyPt_img);
 }
 void test() {
     static const int init_keyPt_thres = configs["init_keyPt_thres"];
     static const string samples_dir = configs["samples"];
-    const string dst_dir = configs["result_dir"];
+    static const string dst_dir = configs["result_dir"];
+    static const ImgLogger track_im_log(dst_dir, "track");
+    static const ImgLogger match_im_log(dst_dir, "match");
+
     const int id_start = configs["start_id"];
     const int id_last = configs["last_id"];
 
@@ -74,7 +83,7 @@ void test() {
         cout << prevFrame.get_id() << "--" << i << endl;
         NewFrame cur{i};
         cur.read_frame();
-        imwrite(dst_dir+"rgb_"+to_string(cur.get_id())+".jpg", cur.rgb());
+        //imwrite(dst_dir+"rgb_"+to_string(cur.get_id())+".jpg", cur.rgb());
 
 
         printf("%d\n", i);
@@ -88,7 +97,11 @@ void test() {
         }
         cout << "track ok" << endl;
         cv::Mat imgTrack = tk.draw();
-        imwrite(dst_dir+"track_"+to_string(i-1) + "--" + to_string(i) + ".jpg", imgTrack);
+        
+        boost::format fmter{"%1%--%2%"};
+        string id_name = str(fmter%prevFrame.get_id()%cur.get_id());
+        track_im_log.save(imgTrack, id_name);
+        //imwrite(dst_dir+"track_"+to_string(i-1) + "--" + to_string(i) + ".jpg", imgTrack);
         //cv::imshow("track result", imgTrack);
         //waitKey(0);
 
@@ -144,7 +157,13 @@ void test() {
         cout << "success match\n";
 
         cv::Mat img_mch = pMch->draw();
-        cv::imwrite(dst_dir+"match_"+to_string(i-1) + "--" + to_string(i) + ".jpg", img_mch);
+
+        {
+        boost::format fmter{"%1%--%2%"};
+        string id_name = str(fmter%prevFrame.get_id()%cur.get_id());
+        match_im_log.save(img_mch, id_name);
+        }
+        //cv::imwrite(dst_dir+"match_"+to_string(i-1) + "--" + to_string(i) + ".jpg", img_mch);
         swap(prevFrame, cur);
     }
 

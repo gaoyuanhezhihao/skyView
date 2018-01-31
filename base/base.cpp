@@ -83,10 +83,12 @@ ImgLogger::ImgLogger(const string dst_dir, const std::string name){
     FS::create_directories(_dir);
 }
 
-void ImgLogger::save(const cv::Mat & img, const int id) {
-    boost::filesystem::path fname(to_string(id)+".jpg");
+void ImgLogger::save(const cv::Mat & img, const int id) const {
+    save(img, to_string(id));
+}
+void ImgLogger::save(const cv::Mat & img, const string name) const {
+    boost::filesystem::path fname(name+".jpg");
     FS::path p = _dir / fname;
     //imwrite(img, p.string());
     imwrite(p.string(), img);
 }
-
