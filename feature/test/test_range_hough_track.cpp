@@ -54,7 +54,7 @@ void log_line_img(const NewFrame & f) {
 
 void log_keyPt_img(const NewFrame & f) {
     static const string dst_dir = configs["result_dir"];
-    static ImgLogger im_log(dst_dir, "line");
+    static ImgLogger im_log(dst_dir, "keyPt");
 
     cv::Mat keyPt_img = f.rgb().clone();
     draw_points(keyPt_img, f.keyPts());
@@ -71,7 +71,7 @@ void test() {
     const int id_start = configs["start_id"];
     const int id_last = configs["last_id"];
 
-    redirect_cout();
+    //redirect_cout();
     NewFrame prevFrame{id_start};
     prevFrame.read_frame();
     init_frame(prevFrame);
@@ -86,7 +86,7 @@ void test() {
         //imwrite(dst_dir+"rgb_"+to_string(cur.get_id())+".jpg", cur.rgb());
 
 
-        printf("%d\n", i);
+        printf("%d--%d\n", prevFrame.get_id(), i);
         Tracker tk(prevFrame.keyPts(), prevFrame.edge(),
                 cur.edge());
         if(! tk.run()){
@@ -113,9 +113,9 @@ void test() {
             continue;
         }
         cout << "predict ok" << endl;
-        for(pair<double, double> & rg: theta_rgs) {
-            cout << rg.first << ", " << rg.second << "\n";
-        }
+        //for(pair<double, double> & rg: theta_rgs) {
+            //cout << rg.first << ", " << rg.second << "\n";
+        //}
 
 
 
@@ -128,10 +128,10 @@ void test() {
         }
         cout << "detecting lines ok" << endl;
         log_line_img(cur);
-        cout << "lines:\n";
-        for(const Vec2f & l : cur.lines()) {
-            cout << l[0] << ", " << l[1] << '\n';
-        }
+        //cout << "lines:\n";
+        //for(const Vec2f & l : cur.lines()) {
+            //cout << l[0] << ", " << l[1] << '\n';
+        //}
         //cout << "count of lines=" << cur.lines().size() << endl;
         SHOW(cur.lines().size());
 
@@ -167,7 +167,7 @@ void test() {
         swap(prevFrame, cur);
     }
 
-    set_cout_default();
+    //set_cout_default();
 }
 
 int main(int argc, char ** argv) {

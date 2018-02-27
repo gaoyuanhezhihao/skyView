@@ -82,8 +82,8 @@ bool range_hough(const cv::Mat & edge_im, const vector<pair<double, double>> & t
     static const double theta_resolution = double(configs["theta_resolution"]) * CV_PI / 180;
     static const double rho_resolution = configs["rho_resolution"];
 
-    SHOW(theta_resolution);
-    SHOW(rho_resolution);
+    //SHOW(theta_resolution);
+    //SHOW(rho_resolution);
     //const string dst_dir = configs["result_dir"];
     //imwrite(dst_dir+"range_hough_debug.jpg", edge_im);
     const int width = edge_im.cols;
@@ -164,18 +164,18 @@ bool range_hough(const cv::Mat & edge_im, const vector<pair<double, double>> & t
     }
 
     /* debug */
-    for(int t = 1; t <= numangle; ++t) {
-        int max_cnt = 0;
-        double rho_best = 0.0;
-        for(int r = 1; r <= numrho; ++r) {
-            int base = t * (numrho+2) + r;
-            if(accum[base] > max_cnt) {
-                max_cnt = accum[base];
-                rho_best = (r-1-zero_rho_idx)* rho_resolution;
-            }
-        }
-        cout << "theta:" << theta_vec[t-1] << ", max_cnt=" << max_cnt << ", rho_best=" << rho_best << '\n';
-    }
+    //for(int t = 1; t <= numangle; ++t) {
+        //int max_cnt = 0;
+        //double rho_best = 0.0;
+        //for(int r = 1; r <= numrho; ++r) {
+            //int base = t * (numrho+2) + r;
+            //if(accum[base] > max_cnt) {
+                //max_cnt = accum[base];
+                //rho_best = (r-1-zero_rho_idx)* rho_resolution;
+            //}
+        //}
+        //cout << "theta:" << theta_vec[t-1] << ", max_cnt=" << max_cnt << ", rho_best=" << rho_best << '\n';
+    //}
     /* ------*/
     //cout << "range_hough: \n"; 
     //SHOW(max_cnt);

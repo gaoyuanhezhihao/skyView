@@ -236,10 +236,10 @@ bool NewFrame::detect_lines(const vector<pair<double, double>> & theta_rgs) {
         return false;
     }
     cout << "range_hough line count="  << _lines.size() << endl;
-    cout << "range hough detected lines:\n";
-    for(const Vec2f & l : _lines) {
-        cout << l[0] << ", " << l[1] << '\n';
-    }
+    //cout << "range hough detected lines:\n";
+    //for(const Vec2f & l : _lines) {
+        //cout << l[0] << ", " << l[1] << '\n';
+    //}
 
     _lines = merge_close_lines(_lines);
     //cout << "after merge line count = " << _lines.size() << endl;
