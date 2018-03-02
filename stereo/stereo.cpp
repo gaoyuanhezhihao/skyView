@@ -68,12 +68,15 @@ bool trsf2sky_view(cv::Mat & src_img, Mat & H, int cols, int rows) {
 }
 
 
-bool calibrate(){
+cv::Mat calibrate(){
     /* --read configurations-- */
     string img_src_path = configs["src_img_path"];
-    string result_prefix = configs["result_prefix"];
+    //string result_prefix = configs["result_prefix"];
     string mark_pts_path = configs["mark_points"];
     string sky_view_pts_path = configs["sky_view_pts_path"];
+    string H_mat_path = configs["H_mat_path"];
+    static const int cols_sky_im = configs["cols_sky_im"];
+    static const int rows_sky_im = configs["rows_sky_im"];
 
     vector<cv::Point2f> mark_points;
     vector<cv::Point2f> sky_view_pts;
@@ -86,11 +89,13 @@ bool calibrate(){
     Mat H;
     H = get_the_rotation_param(mark_points, sky_view_pts, p_sample_ids, mark_points.size());
     Mat src_img = imread(img_src_path);
-    int cols_sky_im = configs["cols_sky_im"];
-    int rows_sky_im = configs["rows_sky_im"];
     trsf2sky_view(src_img, H, cols_sky_im, rows_sky_im);
-    dump_mat("H_mat.yml", "H_mat", H);
-    return true;
+    dump_mat(H_mat_path, "H_mat", H);
+
+    cv::Mat warped_sky_view;
+    back_warp(H, cols_sky_im, rows_sky_im, src_img,
+            warped_sky_view);
+    return warped_sky_view;
 }
 
 void NewFrame::read_frame(){

@@ -6,4 +6,5 @@
 #include <opencv2/opencv.hpp>
 #include "Config.hpp"
 cv::Mat get_sky_view(cv::Mat & src_img, int cols, int rows);
+cv::Mat calibrate();
 #endif //STEREO_H
