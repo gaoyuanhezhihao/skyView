@@ -32,7 +32,8 @@ cv::Mat load_mat(const string file_name, const string mat_name) {
     return mat;
 }
 cv::Mat get_sky_view(cv::Mat & src_img, int cols, int rows) {
-    static Mat H = load_mat("H_mat.yml", "H_mat");
+    static string H_mat_path = configs["H_mat_path"];
+    static Mat H = load_mat(H_mat_path, "H_mat");
     cv::Mat warped_sky_view;
     back_warp(H, cols, rows, src_img, warped_sky_view);
     return warped_sky_view;

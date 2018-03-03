@@ -84,6 +84,9 @@ class NewMatch{
         std::vector<std::pair<int, int>> ids;
         cv::Mat R;
         cv::Mat t;
+        double _dx=.0;
+        double _dy=.0;
+        double _theta=.0;
     public:
         NewMatch(const NewFrame* pframe1, const NewFrame * pframe2):pf1(pframe1), pf2(pframe2) {
 
@@ -93,6 +96,8 @@ class NewMatch{
             ids.emplace_back(id1, id2);
         }
         cv::Mat draw() const; 
+        bool calc_cam_motion();
+        bool calc_car_motion();
 };
 
 cv::Scalar rand_color(); 

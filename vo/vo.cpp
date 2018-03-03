@@ -10,6 +10,7 @@
 #include "base.hpp"
 #include "Config.hpp"
 #include "stereo.hpp"
+#include "core.hpp"
 
 using namespace cv;
 using namespace std;
@@ -66,6 +67,90 @@ void draw_matches(Match & m, cv::Mat & imgMatches) {
         cv::line(imgMatches, pt1, pt2, rand_color(), 1, CV_AA);
     }
 }
+
+bool NewMatch::calc_cam_motion() {
+    int cnt = ids.size();
+    CV_Assert(cnt >= 3);
+    Matrix<double, Eigen::Dynamic, 6> A = MatrixXd::Zero(2*cnt, 6);
+    Matrix<double, Eigen::Dynamic, 1> b = MatrixXd::Zero(2*cnt, 1);
+
+    for(int i = 0; i < cnt; ++i) {
+        const pair<int, int> mch_pt_ids = m.ids[i];
+        const double x1 = pf1->keyPts()[mch_pt_ids.first].x;
+        const double y1 = pf1->keyPts()[mch_pt_ids.first].y;
+
+        const double x2 = pf2->keyPts()[mch_pt_ids.second].x;
+        const double y2 = pf2->keyPts()[mch_pt_ids.second].y;
+
+        A(2*i, 0) = x2;
+        A(2*i, 1) = y2;
+        A(2*i, 2) = 1.0;
+        A(2*i+1, 3) = x2;
+        A(2*i+1, 4) = y2;
+        A(2*i+1, 5) = 1.0;
+
+        b(2*i, 0) = x1;
+        b(2*i+1, 0) = y1;
+    }
+    Matrix<double, 6, 1> x = A.colPivHouseholderQr().solve(b);
+    double relative_error = (A*x - b).norm() / b.norm(); 
+    cout << "relative error = "<< relative_error << "\n";
+    //cout << "x=" << x << "\n";
+    R = Mat::zeros(2, 2, CV_64F);
+    t = Mat::zeros(2, 1, CV_64F);
+    R.at<double> (0, 0) = x(0, 0);
+    R.at<double> (0, 1) = x(1, 0);
+    R.at<double> (1, 0) = x(3, 0);
+    R.at<double> (1, 1) = x(4, 0);
+
+    t.at<double> (0, 0) = x(2, 0);
+    t.at<double> (1, 0) = x(5, 0);
+    return true;
+}
+double calc_angle_of_2vec(const cv::Mat & v1, const cv::Mat & v2) {
+    assert(v1.rows == 2);
+    assert(v1.cols == 1);
+    assert(v2.rows == 2);
+    assert(v2.cols == 1);
+
+    double nume = v1.at<double>(0, 0)*v2.at<double>(0, 0) +\
+                  v2.at<double>(1, 0)*v2.at<double>(1, 0);
+    double denom = cv::norm(v1) * cv::norm(v2);
+    double cos_theta = nume/denom;
+    double theta = acos(cos_theta);
+    return theta;
+}
+
+bool NewMatch::calc_car_motion(){
+    static const double Ex = configs["Ex"];
+    static const double Ey = configs["Ey"];
+    static const double Fx = configs["Fx"];
+    static const double Fy = configs["Fy"];
+    static const double Gx = configs["Gx"];
+    static const double Gy = configs["Gy"];
+
+    if(R.empty() || t.empty()) {
+        throw std::logic_error("(R,t) is empty.\
+                should have calc_cam_motion successfully\
+                before call calc_car_motion");
+    }
+    Mat E = (Mat_<double>(2,1) << Ex, Ey);
+    Mat F = (Mat_<double>(2,1) << Fx, Fy);
+    Mat G = (Mat_<double>(2,1) << Gx, Gy);
+    Mat E_ = R*E+t;
+    Mat F_ = R*F+t;
+    Mat G_ = R*G+t;
+
+    Mat GG_ = G_ - G;
+    _dx = GG_.at<double>(0, 0);
+    _dy = GG_.at<double>(1, 0);
+
+    Mat GE = E - G;
+    Mat G_E_ = E_ - G_;
+    _theta = calc_angle_of_2vec(GE, G_E_);
+    return true;
+}
+
 bool get_motion(Match & m) {
     int cnt = m.ids.size();
     CV_Assert(cnt == 4);

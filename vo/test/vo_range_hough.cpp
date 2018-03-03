@@ -13,7 +13,6 @@
 #include <opencv2/opencv.hpp>
 
 #include <boost/format.hpp>
-//#include <glog/logging.h>
 
 #include "base.hpp"
 #include "Config.hpp"
@@ -27,21 +26,6 @@
 using namespace cv;
 using namespace std;
 
-//void read_frame(const int i, Frame & f) {
-    //static const string samples_dir = configs["samples"];
-    //static const string dst_dir = configs["result_dir"];
-    //static const int cols_sky_im = configs["cols_sky_im"];
-    //static const int rows_sky_im = configs["rows_sky_im"];
-
-    //f.rgb = cv::imread(samples_dir + to_string(i) + ".jpg");
-    //f.rgb = get_sky_view(f.rgb, cols_sky_im, rows_sky_im);
-//}
-
-//void preprocess(Frame & f) {
-    //detect_lines(f);
-    //f.lines = merge_close_lines(f.lines);
-    //get_inlier_intersects(f);
-//}
 
 void log_line_img(const NewFrame & f) {
     static const string dst_dir = configs["result_dir"];
@@ -160,6 +144,8 @@ void test() {
         cout << "success match\n";
 
         cv::Mat img_mch = pMch->draw();
+
+        /* motion of car*/
 
         {
         boost::format fmter{"%1%--%2%"};
