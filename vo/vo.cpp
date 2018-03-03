@@ -75,7 +75,7 @@ bool NewMatch::calc_cam_motion() {
     Matrix<double, Eigen::Dynamic, 1> b = MatrixXd::Zero(2*cnt, 1);
 
     for(int i = 0; i < cnt; ++i) {
-        const pair<int, int> mch_pt_ids = m.ids[i];
+        const pair<int, int> mch_pt_ids = ids[i];
         const double x1 = pf1->keyPts()[mch_pt_ids.first].x;
         const double y1 = pf1->keyPts()[mch_pt_ids.first].y;
 

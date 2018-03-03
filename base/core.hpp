@@ -98,6 +98,9 @@ class NewMatch{
         cv::Mat draw() const; 
         bool calc_cam_motion();
         bool calc_car_motion();
+        double get_dx()const{return _dx;}
+        double get_dy()const{return _dy;}
+        double get_theta()const {return _theta;}
 };
 
 cv::Scalar rand_color(); 

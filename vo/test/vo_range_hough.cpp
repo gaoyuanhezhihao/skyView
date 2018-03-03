@@ -146,6 +146,15 @@ void test() {
         cv::Mat img_mch = pMch->draw();
 
         /* motion of car*/
+        if(pMch->calc_cam_motion()) {
+            if(pMch->calc_car_motion()) {
+                cout << "calc car motion succeed\n";
+                cout << "dx=" << pMch->get_dx() << "\n";
+                cout << "dy=" << pMch->get_dy() << "\n";
+                cout << "theta=" << pMch->get_theta() << "\n";
+            }
+        }
+        
 
         {
         boost::format fmter{"%1%--%2%"};
