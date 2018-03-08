@@ -5,8 +5,8 @@ H_mat_path = ./data/direction_c920_640x480/H_mat.yml
 
 cols_sky_im = 640 
 rows_sky_im = 610
-start_id = 1 
-last_id = 2315 
+start_id = 690 
+last_id = 770 
 
 merge_line_rho_threshold = 7.0
 merge_line_theta_threshold = 0.1
@@ -27,3 +27,8 @@ Gy = 791.0
 
 match_num_thres = 3
 vertical_theta_thres = 0.1
+
+blur_radius = 5
+Canny_low_thres = 70
+Canny_high_thres = 100
+Canny_krn_sz = 5
