@@ -101,6 +101,7 @@ class NewMatch{
         double get_dx()const{return _dx;}
         double get_dy()const{return _dy;}
         double get_theta()const {return _theta;}
+        int match_num()const {return ids.size();}
 };
 
 cv::Scalar rand_color(); 

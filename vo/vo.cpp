@@ -114,9 +114,10 @@ double calc_angle_of_2vec(const cv::Mat & v1, const cv::Mat & v2) {
     assert(v2.cols == 1);
 
     double nume = v1.at<double>(0, 0)*v2.at<double>(0, 0) +\
-                  v2.at<double>(1, 0)*v2.at<double>(1, 0);
+                  v1.at<double>(1, 0)*v2.at<double>(1, 0);
     double denom = cv::norm(v1) * cv::norm(v2);
     double cos_theta = nume/denom;
+    cout << "cos_theta=" << cos_theta << "\n";
     double theta = acos(cos_theta);
     return theta;
 }

@@ -52,13 +52,21 @@ void test() {
     static const ImgLogger track_im_log(dst_dir, "track");
     static const ImgLogger match_im_log(dst_dir, "match");
 
-    const int id_start = configs["start_id"];
+    int id_start = configs["start_id"];
     const int id_last = configs["last_id"];
 
     //redirect_cout();
+    
     NewFrame prevFrame{id_start};
     prevFrame.read_frame();
-    init_frame(prevFrame);
+    while(!init_frame(prevFrame)){
+        cerr << "fail to init_frame " << id_start << "\n";
+        imshow("edge", prevFrame.edge());
+        imshow("rgb", prevFrame.rgb());
+        waitKey(0);
+        prevFrame = NewFrame(++id_start);
+        prevFrame.read_frame();
+    }
     //prevFrame.detect_lines();
     //prevFrame.calc_keyPts();
     SHOW(prevFrame.lines().size());
@@ -104,6 +112,7 @@ void test() {
 
 
 
+        
         if(!cur.detect_lines(theta_rgs)) {
             cur.detect_lines();
             //if(init_frame(cur)){
@@ -122,20 +131,33 @@ void test() {
         SHOW(cur.lines().size());
 
         if(!cur.calc_keyPts() || int(cur.keyPts().size()) < init_keyPt_thres) {
-            cout << "WARN: calc_keyPts Fail. try common hough\n";
-            if(!init_frame(cur)){
-                continue;
-                //swap(prevFrame, cur);
+            if(init_frame(cur)) {
+                swap(prevFrame, cur);
             }
+            continue;
+            //cout << "WARN: calc_keyPts Fail. try common hough\n";
+            //if(!init_frame(cur)){
+                //continue;
+                ////swap(prevFrame, cur);
+            //}
         }
         cout << "calc keyPts ok" << endl;
         SHOW(cur.keyPts().size());
         log_keyPt_img(cur);
 
 
+        static const int match_num_thres = configs["match_num_thres"];
         shared_ptr<NewMatch> pMch = match_pts(tk, prevFrame, cur);
-        if(nullptr == pMch) {
+        if(nullptr == pMch || pMch->match_num() < match_num_thres) {
             cout << "fail match\n";
+            if(nullptr != pMch) {
+                cv::Mat img_mch = pMch->draw();
+                {
+                boost::format fmter{"%1%--%2%"};
+                string id_name = str(fmter%prevFrame.get_id()%cur.get_id());
+                match_im_log.save(img_mch, id_name);
+                }
+            }
             if(init_frame(cur)){
                 swap(prevFrame, cur);
             }

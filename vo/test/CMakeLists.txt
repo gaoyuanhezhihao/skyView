@@ -7,3 +7,5 @@ target_link_libraries(test_motion vo config base stereo feature)
 add_executable(test_vo_chain test_vo_chain.cpp) 
 target_link_libraries(test_vo_chain vo config base stereo feature)
 
+add_executable(vo_range_hough vo_range_hough.cpp)
+target_link_libraries(vo_range_hough vo config base stereo feature)

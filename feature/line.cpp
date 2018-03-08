@@ -44,6 +44,12 @@ void merge_ranges(vector<pair<double, double>> & ranges) {
     ranges[k++] = cur;
     ranges.resize(k);
 }
+
+bool check_vertical(const Vec2f & l1, const Vec2f & l2) {
+    static const double _thres = configs["vertical_theta_thres"];
+    return abs(abs(l1[1] - l2[1]) - CV_PI/2)< _thres;
+}
+
 bool intersect(const Vec2f & l1, const Vec2f & l2, Point2f & pt) {
     const double r1 = l1[0];
     const double theta1 = l1[1];
@@ -84,6 +90,9 @@ bool get_inlier_intersects(const vector<Vec2f> & lines, vector<Point2f> & keyPts
             //cout << "=====" << lines[i] << "---" << lines[j] << endl;
             //vector<Vec2f> tmp_lines{lines[i], lines[j]};
             //draw_lines(tmp_img, tmp_lines);
+            if(!check_vertical(lines[i], lines[j])) {
+                continue;
+            }
             if(intersect(lines[i], lines[j], pt) &&
                     0.0f <= pt.x && pt.x < img_size.width &&
                     0.0f <= pt.y && pt.y < img_size.height) {
@@ -249,8 +258,11 @@ bool NewFrame::detect_lines(const vector<pair<double, double>> & theta_rgs) {
 bool NewFrame::detect_lines() {
     static const int hough_thres = configs["hough_threshold"];
     //cout << "hough_thres = " << hough_thres << endl;
+    static double theta_resolution = configs["theta_resolution"];
+    static double rho_resolution = configs["rho_resolution"];
 
-    HoughLines(_edge, _lines, 0.5, CV_PI/180, hough_thres, 0, 0 );
+    HoughLines(_edge, _lines, rho_resolution, theta_resolution*CV_PI/180, hough_thres, 0, 0 );
+    cout << "HoughLines:" << _lines.size() << endl;
     //if(!range_hough(_edge, theta_rgs, hough_thres, _lines)){
         //return false;
     //}
