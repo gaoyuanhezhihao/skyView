@@ -212,6 +212,12 @@ vector<Vec2f> merge_close_lines(vector<Vec2f> & lines) {
     return merged;
 }
 
+void NewFrame::merge_tracked_lines(const std::vector<cv::Vec2f> & tracked_lines) {
+    for(const Vec2f & l: tracked_lines) {
+        _lines.push_back(l);
+    }
+    _lines = merge_close_lines(_lines);
+}
 double theta_from_endPoint(const Point2f & pt1, const Point2f & pt2) {
     if(pt2.y == pt1.y) {
         return 0.0;
@@ -230,6 +236,9 @@ double rho_from_endPoint(const Point2f & pt1, const Point2f & pt2) {
 }
 
 
+Vec2f get_line_from_endPts(const Point2f & pt1, const Point2f & pt2) {
+    return Vec2f{float(rho_from_endPoint(pt1, pt2)), float(theta_from_endPoint(pt1, pt2))};
+}
 
 
 bool NewFrame::calc_keyPts() {

@@ -25,6 +25,7 @@ class NewFrame{
         cv::Mat _R_global;
         cv::Mat _t_global;
     public:
+        void merge_tracked_lines(const std::vector<cv::Vec2f> & tracked_lines); 
         NewFrame(int id):_id(id), _R_global(cv::Mat::eye(2, 2, CV_64F)), _t_global(cv::Mat::zeros(2, 1, CV_64F)) {}
 
         //void set_lines(std::shared_ptr<std::vector<cv::Vec2f>> pl) {

@@ -12,4 +12,5 @@
 bool predict_lines(const std::vector<std::vector<int>> & line_pts_map, Tracker & tracker, std::vector<std::pair<double, double>> & theta_rgs);
 
 bool range_hough(const cv::Mat & edge_im, const std::vector<std::pair<double, double>> & theta_ranges, const int threshold, std::vector<cv::Vec2f> & lines);
+bool predict_lines(const vector<vector<int>> & line_pts_map, Tracker & tracker, vector<pair<double, double>> & theta_rgs, vector<Vec2f> & tracked_lines);
 #endif //RANGE_HOUGH_H

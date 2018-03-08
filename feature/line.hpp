@@ -21,4 +21,5 @@ void merge_ranges(vector<pair<double, double>> & ranges);
 bool predict_lines(const vector<vector<int>> & line_pts_map, Tracker & tracker, vector<pair<double, double>> & theta_rgs);
 bool get_inlier_intersects(const vector<Vec2f> & lines, vector<Point2f> & keyPts, vector<vector<int>> & line_endPt_id_map, cv::Size & img_size);
 bool init_frame(NewFrame & f);
+Vec2f get_line_from_endPts(const Point2f & pt1, const Point2f & pt2);
 #endif //LINE_H
