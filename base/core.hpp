@@ -8,6 +8,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "Config.hpp"
+#include "Pose.hpp"
 
 
 class NewFrame{
@@ -88,6 +89,8 @@ class NewMatch{
         double _dx=.0;
         double _dy=.0;
         double _theta=.0;
+        //Pose2D _cam_mot;
+        //Pose2D _car_mot;
     public:
         NewMatch(const NewFrame* pframe1, const NewFrame * pframe2):pf1(pframe1), pf2(pframe2) {
 
@@ -99,6 +102,7 @@ class NewMatch{
         cv::Mat draw() const; 
         bool calc_cam_motion();
         bool calc_car_motion();
+        bool ceres_solve_cam_motion();
         double get_dx()const{return _dx;}
         double get_dy()const{return _dy;}
         double get_theta()const {return _theta;}

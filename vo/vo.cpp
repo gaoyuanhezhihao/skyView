@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -11,6 +12,7 @@
 #include "Config.hpp"
 #include "stereo.hpp"
 #include "core.hpp"
+#include "pose.hpp"
 
 using namespace cv;
 using namespace std;
@@ -66,6 +68,41 @@ void draw_matches(Match & m, cv::Mat & imgMatches) {
         cv::circle(imgMatches, pt2, 5, rand_color(), 2);
         cv::line(imgMatches, pt1, pt2, rand_color(), 1, CV_AA);
     }
+}
+bool NewMatch::ceres_solve_cam_motion() {
+    int cnt = ids.size();
+    CV_Assert(cnt >= 2);
+    vector<array<double, 2>> prev_pts(cnt);/*(x, y)*/
+    vector<array<double, 2>> cur_pts(cnt);/*(x, y)*/
+
+    for(int i = 0; i < cnt; ++i) {
+        const std::pair<int, int> &   mch_pt_ids = ids[i];
+        const double x1 = pf1->keyPts()[mch_pt_ids.first].x;
+        const double y1 = pf1->keyPts()[mch_pt_ids.first].y;
+        prev_pts[i][0] = x1;
+        prev_pts[i][1] = y1;
+
+        const double x2 = pf2->keyPts()[mch_pt_ids.second].x;
+        const double y2 = pf2->keyPts()[mch_pt_ids.second].y;
+        cur_pts[i][0] = x2;
+        cur_pts[i][1] = y2;
+    }
+    double cam_theta = 0.0;
+    double cam_t[2]{0., 0.};
+    if(!solve_2D_pose(cur_pts, prev_pts, &cam_theta, cam_t)) {
+        return false;
+    }
+
+    R = Mat::zeros(2, 2, CV_64F);
+    t = Mat::zeros(2, 1, CV_64F);
+    R.at<double> (0, 0) = cos(cam_theta);
+    R.at<double> (0, 1) = -sin(cam_theta);
+    R.at<double> (1, 0) = sin(cam_theta);
+    R.at<double> (1, 1) = cos(cam_theta);
+
+    t.at<double> (0, 0) = cam_t[0];
+    t.at<double> (1, 0) = cam_t[1];
+    return true;
 }
 
 bool NewMatch::calc_cam_motion() {
