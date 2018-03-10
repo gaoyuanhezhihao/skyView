@@ -89,7 +89,7 @@ bool NewMatch::ceres_solve_cam_motion() {
     }
     double cam_theta = 0.0;
     double cam_t[2]{0., 0.};
-    if(!solve_2D_pose(cur_pts, prev_pts, &cam_theta, cam_t)) {
+    if(!solve_2D_pose(cur_pts, prev_pts, cam_theta, cam_t)) {
         return false;
     }
 

@@ -9,3 +9,6 @@ target_link_libraries(test_vo_chain vo config base stereo feature)
 
 add_executable(vo_range_hough vo_range_hough.cpp)
 target_link_libraries(vo_range_hough vo config base stereo feature)
+
+add_executable(ceres_vo ceres_vo.cpp)
+target_link_libraries(ceres_vo vo config base stereo feature)

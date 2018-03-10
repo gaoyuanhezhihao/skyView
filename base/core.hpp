@@ -8,7 +8,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "Config.hpp"
-#include "Pose.hpp"
+//#include "Pose.hpp"
 
 
 class NewFrame{

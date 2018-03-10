@@ -6,6 +6,8 @@
 #include "ceres/ceres.h"
 #include "glog/logging.h"
 
+#include "pose.hpp"
+
 using namespace std;
 using ceres::AutoDiffCostFunction;
 using ceres::CostFunction;
@@ -13,29 +15,29 @@ using ceres::Problem;
 using ceres::Solver;
 
 struct Affine2D {
-  Affine2D(const double cur_in[2], const double prev_in[2]) {
-    cur[0] = cur_in[0];
-    cur[1] = cur_in[1];
-    prev[0] = prev_in[0];
-    prev[1] = prev_in[1];
-  }
+    Affine2D(const double cur_in[2], const double prev_in[2]) {
+        cur[0] = cur_in[0];
+        cur[1] = cur_in[1];
+        prev[0] = prev_in[0];
+        prev[1] = prev_in[1];
+    }
 
-  template <typename T>
-  bool operator()(const T* theta,
-                  const T* t,
-                  T* residuals) const {
-    const T q_0 =  cos(theta[0]) * cur[0] - sin(theta[0]) * cur[1] + t[0];
-    const T q_1 =  sin(theta[0]) * cur[0] + cos(theta[0]) * cur[1] + t[1];
-    //const T f = TemplatedComputeDistortion(q_0 * q_0 + q_1 * q_1);
-    //residuals[0] = prev[0] - f * q_0;
-    //residuals[1] = prev[1] - f * q_1;
-    residuals[0] = prev[0] - q_0;
-    residuals[1] = prev[1] - q_1;
-    return true;
-  }
+    template <typename T>
+        bool operator()(const T* theta,
+                const T* t,
+                T* residuals) const {
+            const T q_0 =  cos(theta[0]) * cur[0] - sin(theta[0]) * cur[1] + t[0];
+            const T q_1 =  sin(theta[0]) * cur[0] + cos(theta[0]) * cur[1] + t[1];
+            //const T f = TemplatedComputeDistortion(q_0 * q_0 + q_1 * q_1);
+            //residuals[0] = prev[0] - f * q_0;
+            //residuals[1] = prev[1] - f * q_1;
+            residuals[0] = prev[0] - q_0;
+            residuals[1] = prev[1] - q_1;
+            return true;
+        }
 
-  double cur[2];
-  double prev[2];
+    double cur[2];
+    double prev[2];
 };
 
 bool solve_2D_pose(const vector<array<double, 2>> & cur_pts, const vector<array<double, 2>> & prev_pts, double & _theta, double _t[2]) {
@@ -57,4 +59,9 @@ bool solve_2D_pose(const vector<array<double, 2>> & cur_pts, const vector<array<
     Solve(opt, &problem, &summary);
     //std::cout << summary.BriefReport() << "\n";
     return true;
+}
+
+bool Pose2D::solve(const vector<array<double, 2>> & cur_pts,
+        const vector<array<double, 2>> & prev_pts) {
+    return solve_2D_pose(cur_pts, prev_pts, _theta, _t);
 }

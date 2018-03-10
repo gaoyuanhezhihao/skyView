@@ -1,7 +1,7 @@
 #file(GLOB SRC "*.cpp")
 set(SRC vo.hpp vo.cpp)
 add_library(vo STATIC ${SRC})
-target_link_libraries(vo config base stereo feature)
+target_link_libraries(vo config base stereo feature pose)
 target_link_libraries(vo ${OpenCV_LIBS})
 target_include_directories(vo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
