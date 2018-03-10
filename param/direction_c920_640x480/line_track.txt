@@ -1,6 +1,6 @@
 option = test 
 samples = ./data/direction_c920_640x480/imgs/
-result_dir = ./data/direction_c920_640x480/test_range_hough_track/
+result_dir = ./data/direction_c920_640x480/line_track/
 H_mat_path = ./data/direction_c920_640x480/H_mat.yml
 
 cols_sky_im = 640 
