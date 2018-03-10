@@ -26,15 +26,19 @@
 using namespace cv;
 using namespace std;
 
-
+template <const char * subfix>
 void log_line_img(const NewFrame & f) {
     static const string dst_dir = configs["result_dir"];
-    static ImgLogger im_log(dst_dir, "line");
+    static ImgLogger im_log(dst_dir, string("line_")+subfix);
     cv::Mat line_img = f.rgb().clone();
     draw_lines(line_img, f.lines(), GREEN);
     im_log.save(line_img, f.get_id());
     //imwrite(dst_dir+"line_"+to_string(f.get_id())+".jpg", line_img);
 }
+
+constexpr const char before[] = "before";
+constexpr const char after[] = "after";
+
 
 void log_keyPt_img(const NewFrame & f) {
     static const string dst_dir = configs["result_dir"];
@@ -52,6 +56,7 @@ void test() {
     static const ImgLogger track_im_log(dst_dir, "track");
     static const ImgLogger match_im_log(dst_dir, "match");
 
+    std::ofstream vo_log(dst_dir+"vo_log.txt");
     int id_start = configs["start_id"];
     const int id_last = configs["last_id"];
 
@@ -75,10 +80,10 @@ void test() {
         cout << prevFrame.get_id() << "--" << i << endl;
         NewFrame cur{i};
         cur.read_frame();
-        //imwrite(dst_dir+"rgb_"+to_string(cur.get_id())+".jpg", cur.rgb());
 
 
         printf("%d--%d\n", prevFrame.get_id(), i);
+        /* track */
         Tracker tk(prevFrame.keyPts(), prevFrame.edge(),
                 cur.edge());
         if(! tk.run()){
@@ -93,53 +98,33 @@ void test() {
         boost::format fmter{"%1%--%2%"};
         string id_name = str(fmter%prevFrame.get_id()%cur.get_id());
         track_im_log.save(imgTrack, id_name);
-        //imwrite(dst_dir+"track_"+to_string(i-1) + "--" + to_string(i) + ".jpg", imgTrack);
-        //cv::imshow("track result", imgTrack);
-        //waitKey(0);
 
+        /* predict lines */
         vector<pair<double, double>> theta_rgs;
-        if(!predict_lines(prevFrame.line_endPt_id_map(), tk, theta_rgs)){
+        vector<Vec2f> tracked_lines;
+        if(!predict_lines(prevFrame.line_endPt_id_map(), tk, theta_rgs, tracked_lines)){
             if(init_frame(cur)){
                 swap(prevFrame, cur);
             }
             continue;
         }
         cout << "predict ok" << endl;
-        //for(pair<double, double> & rg: theta_rgs) {
-            //cout << rg.first << ", " << rg.second << "\n";
-        //}
-
-
-
-
         
         if(!cur.detect_lines(theta_rgs)) {
             cur.detect_lines();
-            //if(init_frame(cur)){
-                //swap(prevFrame, cur);
-            //}else {
-                //continue;
-            //}
         }
         cout << "detecting lines ok" << endl;
-        log_line_img(cur);
-        //cout << "lines:\n";
-        //for(const Vec2f & l : cur.lines()) {
-            //cout << l[0] << ", " << l[1] << '\n';
-        //}
-        //cout << "count of lines=" << cur.lines().size() << endl;
+        log_line_img<before>(cur);
+        cur.merge_tracked_lines(tracked_lines);
+        log_line_img<after>(cur);
         SHOW(cur.lines().size());
 
+        /* key Points */
         if(!cur.calc_keyPts() || int(cur.keyPts().size()) < init_keyPt_thres) {
             if(init_frame(cur)) {
                 swap(prevFrame, cur);
             }
             continue;
-            //cout << "WARN: calc_keyPts Fail. try common hough\n";
-            //if(!init_frame(cur)){
-                //continue;
-                ////swap(prevFrame, cur);
-            //}
         }
         cout << "calc keyPts ok" << endl;
         SHOW(cur.keyPts().size());
@@ -174,6 +159,10 @@ void test() {
                 cout << "dx=" << pMch->get_dx() << "\n";
                 cout << "dy=" << pMch->get_dy() << "\n";
                 cout << "theta=" << pMch->get_theta() << "\n";
+                vo_log << prevFrame.get_id() << "--" << cur.get_id()<< "\n";
+                vo_log << "dx=" << pMch->get_dx() << "\n";
+                vo_log << "dy=" << pMch->get_dy() << "\n";
+                vo_log << "theta=" << pMch->get_theta() << "\n";
             }
         }
         
