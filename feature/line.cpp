@@ -243,6 +243,8 @@ Vec2f get_line_from_endPts(const Point2f & pt1, const Point2f & pt2) {
 
 bool NewFrame::calc_keyPts() {
     get_inlier_intersects(_lines, _KeyPts, _Line_endPt_id_map, _rgb.size());
+    _pMatchFrames = vector<NewFrame*>(_KeyPts.size(), nullptr);
+    _match_keyPt_ids = vector<int> (_KeyPts.size(), -1);
     return true;
 }
 

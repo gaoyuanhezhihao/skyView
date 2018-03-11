@@ -7,6 +7,7 @@
 #include "glog/logging.h"
 
 #include "pose.hpp"
+#include "core.hpp"
 
 using namespace std;
 using ceres::AutoDiffCostFunction;
@@ -61,7 +62,39 @@ bool solve_2D_pose(const vector<array<double, 2>> & cur_pts, const vector<array<
     return true;
 }
 
-bool Pose2D::solve(const vector<array<double, 2>> & cur_pts,
-        const vector<array<double, 2>> & prev_pts) {
-    return solve_2D_pose(cur_pts, prev_pts, _theta, _t);
+//bool Pose2D::solve(const vector<array<double, 2>> & cur_pts,
+        //const vector<array<double, 2>> & prev_pts) {
+    //return solve_2D_pose(cur_pts, prev_pts, _theta, _t);
+//}
+
+//bool solve_BA(const vector<array<double, 2>> & pt_global, const vector<array<double, 2>> & pt_cur_local, double & _theta, double _t[2]) {
+    //assert(pt_global.size() == pt_cur_local.size());
+    //return solve_2D_pose(pt_cur_local, pt_global, _theta, _t);
+//}
+
+
+void NewFrame::add_restrict(vector<array<double, 2>> & pts_cur_local,
+        const cv::Point2f & pt_local, NewFrame* pF, const int id,
+        vector<array<double,2>> & pts_global) {
+    if(nullptr == pF) {
+        return;
+    }
+    assert(pF->_pMatchFrames.size() == pF->_global_pts.size());
+    assert(pF->_match_keyPt_ids.size() == pF->_global_pts.size());
+    assert(pF->_global_pts.size() == pF->_KeyPts.size());
+    pts_cur_local.emplace_back(pt_local.x, pt_local.y);
+    pts_global.emplace_back(pF->_global_pts[id].x, pF->_global_pts.pts[id].y);
+    add_restrict(pts_cur_local, pt_local, pF->_pMatchFrames[id], pF->_match_keyPt_ids[id], pts_global);
+}
+
+bool NewFrame::neib_BA() {
+    const int kp_cnt = _KeyPts.size();
+    vector<array<double, 2>> pts_ref_global;
+    vector<array<double, 2>> pts_cur_local;
+    for(int i = 0; i < kp_cnt; ++i) {
+        add_restrict(pts_cur_local, _KeyPts[i],
+                _pMatchFrames[i], _match_keyPt_ids[i], pts_ref_global);
+    }
+    solve_2D_pose(pts_cur_local, pts_ref_global, _theta, _t);
+    return true;
 }

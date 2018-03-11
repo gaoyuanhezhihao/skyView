@@ -10,6 +10,9 @@
 #include "Config.hpp"
 //#include "Pose.hpp"
 
+class NewMatch;
+class NewFrame;
+
 
 class NewFrame{
     private:
@@ -18,20 +21,26 @@ class NewFrame{
         cv::Mat _gray;
         cv::Mat _edge;
         std::vector<cv::Point2f> _KeyPts;
-        //std::shared_ptr<std::vector<cv::Point2f>> _pKeyPts;
         std::vector<cv::Vec2f> _lines;
-        //std::shared_ptr<std::vector<cv::Vec2f>> _pLines;
-        //std::shared_ptr<std::vector<std::vector<int>>> _pLine_endPt_id_map;
         std::vector<std::vector<int>> _Line_endPt_id_map;
         cv::Mat _R_global;
         cv::Mat _t_global;
+        std::vector<cv::Point2f> _global_pts;
+        std::vector<NewFrame*> _pMatchFrames;
+        std::vector<int> _match_keyPt_ids;
+        double _theta;
+        double _t[2];
+        void add_restrict(vector<array<double, 2>> & pt_cur_local, const cv::Point2f & pt_local, NewFrame* pF, const int id, vector<array<double,2>> & pts_global);
     public:
+        bool neib_BA();
+        void add_match_pts(int this_id, int other, NewFrame* pF);
+
         void merge_tracked_lines(const std::vector<cv::Vec2f> & tracked_lines); 
         NewFrame(int id):_id(id), _R_global(cv::Mat::eye(2, 2, CV_64F)), _t_global(cv::Mat::zeros(2, 1, CV_64F)) {}
 
         //void set_lines(std::shared_ptr<std::vector<cv::Vec2f>> pl) {
-            //assert(nullptr == _pLines);
-            //_pLines = pl;
+        //assert(nullptr == _pLines);
+        //_pLines = pl;
         //}
 
         bool calc_keyPts(); 
@@ -39,17 +48,17 @@ class NewFrame{
         bool detect_lines();
 
         //void set_key_pts(std::shared_ptr<std::vector<cv::Point2f>> pKeyPts,
-                //std::shared_ptr<std::vector<std::vector<int>>> pLine_endPt_id_map) {
-            //assert(nullptr == _pKeyPts);
-            //assert(nullptr == _pLine_endPt_id_map);
-            //_pKeyPts = pKeyPts;
-            //_pLine_endPt_id_map = pLine_endPt_id_map;
+        //std::shared_ptr<std::vector<std::vector<int>>> pLine_endPt_id_map) {
+        //assert(nullptr == _pKeyPts);
+        //assert(nullptr == _pLine_endPt_id_map);
+        //_pKeyPts = pKeyPts;
+        //_pLine_endPt_id_map = pLine_endPt_id_map;
         //}
         const std::vector<cv::Point2f> & keyPts()const {
             return _KeyPts;
         }
         //const std::vector<cv::Point2f> & keyPts()const {
-            //return *_pKeyPts;
+        //return *_pKeyPts;
         //}
         const cv::Mat & rgb()const {
             return _rgb;
@@ -62,7 +71,7 @@ class NewFrame{
             return _Line_endPt_id_map;
         }
         //const std::vector<std::vector<int>> line_endPt_id_map() const {
-            //return *_pLine_endPt_id_map;
+        //return *_pLine_endPt_id_map;
         //}
         const cv::Mat & edge()const {
             return _edge;
@@ -81,8 +90,8 @@ class NewFrame{
 
 class NewMatch{
     private:
-        const NewFrame * pf1;
-        const NewFrame * pf2;
+        NewFrame * pf1;
+        NewFrame * pf2;
         std::vector<std::pair<int, int>> ids;
         cv::Mat R;
         cv::Mat t;
@@ -96,9 +105,7 @@ class NewMatch{
 
         }
 
-        void add(int id1, int id2) {
-            ids.emplace_back(id1, id2);
-        }
+        void add(int id1, int id2) ;
         cv::Mat draw() const; 
         bool calc_cam_motion();
         bool calc_car_motion();
