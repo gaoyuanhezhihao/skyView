@@ -55,4 +55,5 @@ void draw_points(cv::Mat & img, const std::vector<cv::Point2f> & pts, cv::Scalar
 float street_dist(const cv::Point2f & p1, const cv::Point2f & p2);
 void set_cout_default();
 void redirect_cout();
+int dist_pt2line(const cv::Vec2f & line, const cv::Point & pt);
 #endif //BASE_H
