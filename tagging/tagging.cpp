@@ -8,6 +8,7 @@
 //#include "vanish.hpp"
 #include "Config.hpp"
 #include "base.hpp"
+#include "core.hpp"
 using namespace std;
 using namespace cv;
 
@@ -37,7 +38,7 @@ struct Sample{
     vector<Vec2f> lines;
     vector<Point> pts;
     vector<int> pt_ids;
-    Mat draw() {
+    Mat draw() const {
         assert(pts.size() == pt_ids.size());
         Mat clone = rgb.clone();
         draw_lines(clone, lines, GREEN);
@@ -49,19 +50,35 @@ struct Sample{
         }
         return clone;
     }
-    void dump_lines(ofstream & out) const {
+    void dump_lines(ostream & out) const {
         for(const Vec2f & l:lines) {
             out << l[0] << " " << l[1] << '\n';
         }
     }
-    void dump_pts(ofstream & out) const {
+    void dump_pts(ostream & out) const {
         for(size_t i = 0; i < pts.size(); ++i) {
             out << pts[i].x << " " << pts[i].y  << " " << pt_ids[i] << "\n";
         }
     }
 };
 
+char show_waitClick_Order(Mat rgb, Point & click) {
+    cout << "click points/input order...\n";
+    click_cnt = 0;
+    char order;
+    while(click_cnt < 1) {
+        imshow("window", rgb);
+        order = waitKey(10);
+        if('i' == order || 'd' == order || 'o' == order) {
+            break;
+        }
+    }
+    click = click_pts[0];
+    return order; 
+}
+
 Point show_waitClick(Mat rgb) {
+    cout << "click points...\n";
     click_cnt = 0;
     while(click_cnt < 1) {
         imshow("window", rgb);
@@ -71,21 +88,35 @@ Point show_waitClick(Mat rgb) {
 }
 
 char show_waitKey(Mat rgb, const vector<Vec2f> & lines, const int select=-1)  {
+    cout << "order ?:";
     draw_lines(rgb, lines, Scalar(0, 100, 100));
     if(-1 != select) {
         draw_lines(rgb, vector<Vec2f> {lines[select]}, GREEN);
     }
     imshow("window", rgb);
-    return waitKey(0);
+    char order =waitKey(0);
+    cout << order <<"\n";
+    return order;
 }
-vector<Vec2f> adjust_hough(Mat rgb, Mat edge) {
-    vector<Vec2f> lines;
-    do{
-        lines.clear();
-        HoughLines(edge, lines, 1, CV_PI / 180, hough_thres, 0, 0);
-    }while('y' != show_waitKey(rgb.clone(), lines));
-    return lines;
-}
+//vector<Vec2f> adjust_hough(Mat rgb, Mat edge) {
+    //vector<Vec2f> lines;
+    //char order = '*';
+    //do{
+        //cout << "adjust hough...\n";
+        //lines.clear();
+        //HoughLines(edge, lines, 1, CV_PI / 180, hough_thres, 0, 0);
+        //order  = show_waitKey(rgb.clone(), lines);
+        //cout << "order =" << order << "\n";
+        //if('i' == order) {
+            //hough_thres += 5;
+            //cout << "increased hough thres to:" << hough_thres << '\n';
+        //}else if('d' == order) {
+            //hough_thres -= 5;
+            //cout << "decreased hough thres to:" << hough_thres << '\n';
+        //}
+    //}while('y' != order);
+    //return lines;
+//}
 
 struct PtDistCmpor{
     Point pt;
@@ -94,41 +125,69 @@ struct PtDistCmpor{
         return dist_pt2line(l, pt) < dist_pt2line(r, pt);
     }
 };
-char select_one_line(Mat rgb, vector<Vec2f> lines, vector<Vec2f> & selected) {
-    if(0 == lines.size()) {
-        return 'o';
-    }
-    Point pt = show_waitClick(rgb);
+
+bool select_one_line(Mat edge, Mat rgb, Vec2f & selected) {
+    static double theta_resolution = configs["theta_resolution"];
+    static double rho_resolution = configs["rho_resolution"];
+    cout << "select one line\n";
+    vector<Vec2f> lines;
+    Point click;
+
     char order = ' ';
-    std::sort(lines.begin(), lines.end(), PtDistCmpor(pt));
-    while('o' != order) {
-        for(size_t i = 0; i < lines.size(); ++i) {
-            order = show_waitKey(rgb.clone(), lines, i);
-            if('y' == order) {
-                selected.push_back(lines[i]);
-                break;
-            }
-            if('o' == order) { /* over */
-                break;
-            }
+    Mat img_lines;
+    while(true) {
+        lines.clear();
+        HoughLines(edge, lines, rho_resolution, theta_resolution*CV_PI / 180, hough_thres, 0, 0);
+        img_lines = rgb.clone();
+        draw_lines(img_lines, lines, Scalar(0, 100, 100));
+
+        order = show_waitClick_Order(img_lines, click);
+        if(order == 'i') {
+            hough_thres += 5;
+            cout << "increased hough thres to:" << hough_thres << '\n';
+        }else if(order == 'd'){
+            hough_thres -= 5;
+            cout << "decreased hough thres to:" << hough_thres << '\n';
+        }else if(order == 'o'){
+            return false;
+        }else {
+            break;
         }
     }
 
-    return order;
+
+    std::sort(lines.begin(), lines.end(), PtDistCmpor(click));
+    order = ' ';
+    while(true) {
+        for(size_t i = 0; i < lines.size(); ++i) {
+            order = show_waitKey(img_lines.clone(), lines, i);
+            if('y' == order) {
+                selected = lines[i];
+                return true;
+            }
+            if('o' == order) { /* over */
+                return false;
+            }
+        }
+    }
 }
 
 void select_lines(Sample & rst) {
     cv::Mat edge;
     Canny(rst.rgb, edge, 30, 70, 3);
-    vector<Vec2f> lines = adjust_hough(rst.rgb, edge);
 
-    Mat img_lines = rst.rgb.clone();
-    draw_lines(img_lines, lines, Scalar(0, 100, 100));
-    do{
-        draw_lines(img_lines, rst.lines, GREEN);
-        imshow("selected lines", img_lines);
+    Mat img_selected= rst.rgb.clone();
+    while(true) {
+        draw_lines(img_selected, rst.lines, GREEN);
+        imshow("selected lines", img_selected);
         waitKey(10);
-    }while('o' != select_one_line(img_lines.clone(), lines, rst.lines));
+        Vec2f slc;
+        if(select_one_line(edge, rst.rgb.clone(), slc)) {
+            rst.lines.push_back(slc);
+        }else {
+            break;
+        }
+    }
 }
 
 vector<Point> intersect(vector<Vec2f> & l_lines, vector<Vec2f> & r_lines) {
@@ -167,31 +226,36 @@ struct Pt2PtCmpor{
         return cv::norm(lp-ref) < cv::norm(rp-ref);
     }
 };
-char select_one_pt(vector<Point> pts, Mat img, Sample & rst) {
-    Point click = show_waitClick(img);
+bool select_one_pt(vector<Point> pts, Mat img, Point & rst) {
+    //Point click = show_waitClick(img);
+    Point click;
+    char order = show_waitClick_Order(img, click);
+    if('o' == order) {
+        return false;
+    }
     sort(pts.begin(), pts.end(), Pt2PtCmpor(click));
-    char order = ' ';
-    while('n' == order) {
+    while('o' != order && 'y' != order) {
         for(size_t i = 0; i < pts.size(); ++i) {
             Mat clone = img.clone();
-            circle(clone, pts[i], 5, Scalar(0, 100, 100));
-            imshow("select point", clone);
+            circle(clone, pts[i], 5, GREEN);
+            imshow("window", clone);
             order = waitKey(0);
-            if('n' == order) {
-                continue;
-            }
+            cout << "order =" << order << "\n";
             if('o' == order) {
                 break;
             }
-            assert('0' <= order && order <= '9');
-            int id = order-'0';
-            rst.pts.push_back(pts[i]);
-            rst.pt_ids.push_back(id);
-            cout << "insert " << id << "\n";
+            if('y' == order) {
+                rst = pts[i];
+                break;
+            }
+            //assert('0' <= order && order <= '9');
+            //int id = order-'0';
+            //rst.pts.push_back(pts[i]);
+            //rst.pt_ids.push_back(id);
+            //cout << "insert " << id << "\n";
         }
     }
-    assert(rst.pts.size() == rst.pt_ids.size());
-    return order;
+    return order == 'y';
 }
 
 void draw_pts(Mat & img, const vector<Point>& pts, cv::Scalar color=Scalar(0, 100, 100)) {
@@ -200,7 +264,28 @@ void draw_pts(Mat & img, const vector<Point>& pts, cv::Scalar color=Scalar(0, 10
     }
 }
 
-void select_point(Sample & rst) {
+void select_new_points(vector<Point> candidates, Sample & rst) {
+    static int max_id = 0;
+    cout << "---select new points---\n candidates size=" << candidates.size() << "\n";
+    Mat img_total_pts = rst.rgb.clone();
+    draw_pts(img_total_pts, candidates);
+    for(; ; ++max_id) {
+        cout << max_id << ":\n";
+        draw_pts(img_total_pts, rst.pts, GREEN);
+        imshow("selected pts", img_total_pts);
+        waitKey(10);
+        Point select_pt;
+        if(select_one_pt(candidates, img_total_pts.clone(), select_pt)) {
+            rst.pts.push_back(select_pt);
+            rst.pt_ids.push_back(max_id);
+        }else {
+            break;
+        }
+    }
+    cout << "===End select new points ===\n";
+}
+
+void select_points(Sample & prev, Sample & rst) {
     const int sz = rst.lines.size();
     if(0 == sz) {
         cout << "empty lines!!!\n";
@@ -210,16 +295,28 @@ void select_point(Sample & rst) {
     Mat img_total_pts = rst.rgb.clone();
     for(int i = 0; i < sz; ++i) {
         for(int j = i+1; j < sz; ++j) {
-            pts.emplace_back(intersect(rst.lines[i], rst.lines[j]));
+            Point pt = intersect(rst.lines[i], rst.lines[j]);
+            if(0<= pt.x && pt.x < rst.rgb.cols &&\
+                    0<= pt.y && pt.y < rst.rgb.rows) {
+                pts.emplace_back(pt);
+            }
         }
     }
     draw_pts(img_total_pts, pts);
-
-    do{
-        draw_pts(img_total_pts, rst.pts, GREEN);
-        imshow("selected pts", img_total_pts);
+    cout << "select points\n";
+    for(int id: prev.pt_ids) {
+        //draw_pts(img_total_pts, rst.pts, GREEN);
+        imshow("selected pts", rst.draw());
         waitKey(10);
-    }while('o' != select_one_pt(pts, img_total_pts.clone(), rst));
+        cout << id << ":\n";
+        Point select_pt;
+        if(select_one_pt(pts, img_total_pts.clone(), select_pt)) {
+            rst.pts.push_back(select_pt);
+            rst.pt_ids.push_back(id);
+        }
+    }
+    //const int max_id = *std::max_element(prev.pt_ids.cbegin(), prev.pt_ids.cend());
+    select_new_points(pts, rst);
 }
 
 Mat draw_match(const Sample & prev, const Sample & cur) {
@@ -238,8 +335,10 @@ Mat draw_match(const Sample & prev, const Sample & cur) {
     }
     return match_img;
 }
-Sample process(Mat rgb) {
+Sample process(Mat rgb, int id) {
     static Sample prev_smpl;
+    static const string dst_dir = configs["result_dir"];
+    static int prev_id = -1;
     if(!prev_smpl.rgb.empty()) {
         imshow("prev", prev_smpl.draw());
         waitKey(1);
@@ -247,11 +346,21 @@ Sample process(Mat rgb) {
     Sample rst;
     rst.rgb = rgb;
     select_lines(rst);
-    select_point(rst);
+    if(rst.lines.empty()) {
+        cout << "! ignore this sample\n";
+        return rst;
+    }
+    select_points(prev_smpl, rst);
 
-    imshow("match", draw_match(prev_smpl, rst));
+    if(!prev_smpl.rgb.empty()) {
+        Mat match_img = draw_match(prev_smpl, rst);
+        imshow("match", match_img);
+        imwrite(dst_dir+to_string(prev_id)+"--"+to_string(id)+".jpg", match_img);
+        waitKey(1);
+    }
     waitKey(1);
     prev_smpl = rst;
+    prev_id = id;
     return rst;
 }
 
@@ -261,14 +370,23 @@ int main(int argc, const char ** argv) {
     }
     configs.init(argv[1]);
     const string dst_dir = configs["result_dir"];
-    const string src_dir = configs["source_dir"];
     namedWindow("window", 1);
     setMouseCallback("window", CallBackFunc, NULL);
     const int start_id = configs["start_id"];
     const int last_id = configs["last_id"];
     for(int i= start_id; i <= last_id; ++i) {
-        Mat rgb = imread(src_dir+to_string(i)+".jpg");
-        Sample rst = process(rgb);
-        
+        cout << "*****" << i << "*****\n";
+        NewFrame cur{i};
+        cur.read_frame();
+
+        Mat rgb = cur.rgb();
+        imshow("edge", cur.edge());
+        waitKey(1);
+        Sample rst = process(rgb, i);
+        ofstream line_rst(dst_dir+to_string(i)+"_line.txt");
+        rst.dump_lines(line_rst);
+
+        ofstream pt_rst(dst_dir+to_string(i)+"_pt.txt");
+        rst.dump_pts(pt_rst);
     }
 }

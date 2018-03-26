@@ -82,8 +82,8 @@ void NewFrame::add_restrict(vector<array<double, 2>> & pts_cur_local,
     assert(pF->_pMatchFrames.size() == pF->_global_pts.size());
     assert(pF->_match_keyPt_ids.size() == pF->_global_pts.size());
     assert(pF->_global_pts.size() == pF->_KeyPts.size());
-    pts_cur_local.emplace_back(pt_local.x, pt_local.y);
-    pts_global.emplace_back(pF->_global_pts[id].x, pF->_global_pts.pts[id].y);
+    pts_cur_local.push_back(array<double, 2> {{pt_local.x, pt_local.y}});
+    pts_global.push_back(array<double, 2> {pF->_global_pts[id].x, pF->_global_pts[id].y});
     add_restrict(pts_cur_local, pt_local, pF->_pMatchFrames[id], pF->_match_keyPt_ids[id], pts_global);
 }
 

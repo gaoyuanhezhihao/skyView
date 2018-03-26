@@ -115,6 +115,7 @@ void NewFrame::read_frame(){
     cvtColor(_rgb, _gray, CV_BGR2GRAY);
     //blur(_gray, _gray, Size(5, 5));
     //Canny(_gray, _edge, 50, 100, 5);
-    blur(_gray, _gray, Size(blur_radius, blur_radius));
+    //blur(_gray, _gray, Size(blur_radius, blur_radius));
+    cv::medianBlur(_gray, _gray, blur_radius);
     Canny(_gray, _edge, Canny_low_thres, Canny_high_thres, Canny_krn_sz);
 }

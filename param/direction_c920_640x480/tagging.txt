@@ -1,0 +1,17 @@
+samples = ./data/direction_c920_640x480/imgs/
+result_dir = ./data/direction_c920_640x480/tagged1/
+H_mat_path = ./data/direction_c920_640x480/H_mat.yml
+
+cols_sky_im = 640 
+rows_sky_im = 610
+
+blur_radius = 3
+Canny_low_thres = 70
+Canny_high_thres = 100
+Canny_krn_sz = 5
+
+start_id = 41
+last_id = 400
+
+theta_resolution = 1.0
+rho_resolution = 1.0

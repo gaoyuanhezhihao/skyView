@@ -35,7 +35,7 @@ bool Tracker::run() {
     return true;
 }
 
-shared_ptr<NewMatch> match_pts(const Tracker & tracker, const NewFrame & prevF, const NewFrame & curF) {
+shared_ptr<NewMatch> match_pts(const Tracker & tracker, NewFrame & prevF, NewFrame & curF) {
     static const double dist_thres = configs["track_match_dist_thres"];
     const vector<Point2f> & track_pts = tracker.ref_tracked_pts();
     const vector<uchar> & track_status = tracker.ref_status();

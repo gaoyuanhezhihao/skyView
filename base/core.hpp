@@ -101,7 +101,7 @@ class NewMatch{
         //Pose2D _cam_mot;
         //Pose2D _car_mot;
     public:
-        NewMatch(const NewFrame* pframe1, const NewFrame * pframe2):pf1(pframe1), pf2(pframe2) {
+        NewMatch(NewFrame* pframe1, NewFrame * pframe2):pf1(pframe1), pf2(pframe2) {
 
         }
 

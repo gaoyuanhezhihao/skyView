@@ -42,5 +42,5 @@ class Tracker{
         cv::Mat draw(); 
 };
 
-std::shared_ptr<NewMatch> match_pts(const Tracker & tracker, const NewFrame & prevF, const NewFrame & curF);
+std::shared_ptr<NewMatch> match_pts(const Tracker & tracker, NewFrame & prevF, NewFrame & curF);
 #endif //TRACK_H
