@@ -58,6 +58,7 @@ class Config_Map{
         void init(const char * fname);
         void init_by_string(const string s);
         universal_type operator[](const string key); 
+        universal_type traceable_get(const string key, const char * fname, const int line_no);
 };
 
 double & operator << (double & dst, universal_type & src);
@@ -68,4 +69,5 @@ ostream & operator << (ostream & std_out, universal_type & src);
 
 //using CONFIG=std::unordered_map<string, universal_type>;
 extern Config_Map configs;
+#define get_param(s) configs.traceable_get(s, __FILE__, __LINE__)
 #endif // CONFIG_H_INCLUDED

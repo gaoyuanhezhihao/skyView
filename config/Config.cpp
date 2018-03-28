@@ -88,4 +88,13 @@ universal_type Config_Map::operator [](const string key) {
     }
     return map[key];
 }
+universal_type Config_Map::traceable_get(const string key, const char * fname, const int line_no) {
+    try{
+        return (*this)[key];
+    }catch(const std::out_of_range & e) {
+        string err_info = string("\nFile Name:")+string(fname)+string("\nLine number:") + to_string(line_no) + "\n" +e.what();
+        throw std::out_of_range(err_info);
+    }
+}
+
 Config_Map configs;
