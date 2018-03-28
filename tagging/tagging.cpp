@@ -5,13 +5,15 @@
 #include <string>
 #include <array>
 #include <numeric>
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 //#include "vanish.hpp"
 #include "Config.hpp"
 #include "base.hpp"
 #include "core.hpp"
 using namespace std;
 using namespace cv;
-
+namespace fs = boost::filesystem;
 const int CLICK_NUM = 1;
 array<cv::Point, CLICK_NUM> click_pts;
 int click_cnt = 0;
@@ -33,11 +35,14 @@ enum SelectResult{
     Over
 };
 
+//int max_id = 0;
 struct Sample{
     Mat rgb;
+    Mat edge;
     vector<Vec2f> lines;
     vector<Point> pts;
     vector<int> pt_ids;
+    static int max_id;
     Mat draw() const {
         assert(pts.size() == pt_ids.size());
         Mat clone = rgb.clone();
@@ -51,6 +56,7 @@ struct Sample{
         return clone;
     }
     void dump_lines(ostream & out) const {
+        //cout << "dump_lines: lines.size()=" << lines.size() << endl;
         for(const Vec2f & l:lines) {
             out << l[0] << " " << l[1] << '\n';
         }
@@ -60,7 +66,29 @@ struct Sample{
             out << pts[i].x << " " << pts[i].y  << " " << pt_ids[i] << "\n";
         }
     }
+    int load_pts(ifstream & in) {
+        Point pt;
+        int id;
+        while(in) {
+            in >> pt.x >> pt.y >> id;
+            pts.push_back(pt);
+            pt_ids.push_back(id);
+            max_id = max(max_id, id);
+        }
+        return pts.size();
+    }
+    int load_lines(ifstream & in) {
+        Vec2f tmp;
+
+        while(in) {
+            in >> tmp[0] >> tmp[1];
+        }
+        return lines.size();
+    }
 };
+Sample prev_smpl;
+int prev_id = -1;
+int Sample::max_id = 0;
 
 char show_waitClick_Order(Mat rgb, Point & click) {
     cout << "click points/input order...\n";
@@ -69,7 +97,7 @@ char show_waitClick_Order(Mat rgb, Point & click) {
     while(click_cnt < 1) {
         imshow("window", rgb);
         order = waitKey(10);
-        if('i' == order || 'd' == order || 'o' == order) {
+        if('i' == order || 'u' == order || 'o' == order) {
             break;
         }
     }
@@ -110,7 +138,7 @@ char show_waitKey(Mat rgb, const vector<Vec2f> & lines, const int select=-1)  {
         //if('i' == order) {
             //hough_thres += 5;
             //cout << "increased hough thres to:" << hough_thres << '\n';
-        //}else if('d' == order) {
+        //}else if('u' == order) {
             //hough_thres -= 5;
             //cout << "decreased hough thres to:" << hough_thres << '\n';
         //}
@@ -127,8 +155,8 @@ struct PtDistCmpor{
 };
 
 bool select_one_line(Mat edge, Mat rgb, Vec2f & selected) {
-    static double theta_resolution = configs["theta_resolution"];
-    static double rho_resolution = configs["rho_resolution"];
+    static const double theta_resolution = configs["theta_resolution"];
+    static const double rho_resolution = configs["rho_resolution"];
     cout << "select one line\n";
     vector<Vec2f> lines;
     Point click;
@@ -139,13 +167,13 @@ bool select_one_line(Mat edge, Mat rgb, Vec2f & selected) {
         lines.clear();
         HoughLines(edge, lines, rho_resolution, theta_resolution*CV_PI / 180, hough_thres, 0, 0);
         img_lines = rgb.clone();
-        draw_lines(img_lines, lines, Scalar(0, 100, 100));
+        draw_lines(img_lines, lines, Scalar(0, 100, 200));
 
         order = show_waitClick_Order(img_lines, click);
         if(order == 'i') {
             hough_thres += 5;
             cout << "increased hough thres to:" << hough_thres << '\n';
-        }else if(order == 'd'){
+        }else if(order == 'u'){
             hough_thres -= 5;
             cout << "decreased hough thres to:" << hough_thres << '\n';
         }else if(order == 'o'){
@@ -173,8 +201,8 @@ bool select_one_line(Mat edge, Mat rgb, Vec2f & selected) {
 }
 
 void select_lines(Sample & rst) {
-    cv::Mat edge;
-    Canny(rst.rgb, edge, 30, 70, 3);
+    //cv::Mat edge;
+    //Canny(rst.rgb, edge, 30, 70, 3);
 
     Mat img_selected= rst.rgb.clone();
     while(true) {
@@ -182,7 +210,7 @@ void select_lines(Sample & rst) {
         imshow("selected lines", img_selected);
         waitKey(10);
         Vec2f slc;
-        if(select_one_line(edge, rst.rgb.clone(), slc)) {
+        if(select_one_line(rst.edge, rst.rgb.clone(), slc)) {
             rst.lines.push_back(slc);
         }else {
             break;
@@ -265,19 +293,18 @@ void draw_pts(Mat & img, const vector<Point>& pts, cv::Scalar color=Scalar(0, 10
 }
 
 void select_new_points(vector<Point> candidates, Sample & rst) {
-    static int max_id = 0;
     cout << "---select new points---\n candidates size=" << candidates.size() << "\n";
     Mat img_total_pts = rst.rgb.clone();
     draw_pts(img_total_pts, candidates);
-    for(; ; ++max_id) {
-        cout << max_id << ":\n";
+    for(; ; ++Sample::max_id) {
+        cout << Sample::max_id+1 << ":\n";
         draw_pts(img_total_pts, rst.pts, GREEN);
         imshow("selected pts", img_total_pts);
         waitKey(10);
         Point select_pt;
         if(select_one_pt(candidates, img_total_pts.clone(), select_pt)) {
             rst.pts.push_back(select_pt);
-            rst.pt_ids.push_back(max_id);
+            rst.pt_ids.push_back(Sample::max_id+1);
         }else {
             break;
         }
@@ -335,20 +362,17 @@ Mat draw_match(const Sample & prev, const Sample & cur) {
     }
     return match_img;
 }
-Sample process(Mat rgb, int id) {
-    static Sample prev_smpl;
+void process(Sample & rst, int id) {
+    //static Sample prev_smpl;
     static const string dst_dir = configs["result_dir"];
-    static int prev_id = -1;
     if(!prev_smpl.rgb.empty()) {
         imshow("prev", prev_smpl.draw());
         waitKey(1);
     }
-    Sample rst;
-    rst.rgb = rgb;
     select_lines(rst);
     if(rst.lines.empty()) {
         cout << "! ignore this sample\n";
-        return rst;
+        return;
     }
     select_points(prev_smpl, rst);
 
@@ -361,7 +385,36 @@ Sample process(Mat rgb, int id) {
     waitKey(1);
     prev_smpl = rst;
     prev_id = id;
-    return rst;
+    return ;
+}
+
+bool load_old(fs::path dst_dir, const int start_id) {
+    Sample rst;
+    NewFrame cur{start_id};
+    cur.read_frame();
+    rst.rgb = cur.rgb();
+    rst.edge = cur.edge();
+
+    {
+        string pt_fname = boost::str(boost::format("%1%_pt.txt")%start_id);
+        fs::path pt_fp = dst_dir/pt_fname; 
+        if(!fs::exists(pt_fp)) {
+            return false;
+        }
+        ifstream f(pt_fp.c_str());
+        rst.load_pts(f);
+    }
+
+    string line_fname = boost::str(boost::format("%1%_line.txt")%start_id);
+    fs::path line_fp = dst_dir/line_fname; 
+    if(!fs::exists(line_fp)) {
+        return false;
+    }
+    ifstream f(line_fp.c_str());
+    rst.load_lines(f);
+    prev_smpl = rst;
+    prev_id = start_id;
+    return true;
 }
 
 int main(int argc, const char ** argv) {
@@ -372,8 +425,12 @@ int main(int argc, const char ** argv) {
     const string dst_dir = configs["result_dir"];
     namedWindow("window", 1);
     setMouseCallback("window", CallBackFunc, NULL);
-    const int start_id = configs["start_id"];
+    int start_id = configs["start_id"];
     const int last_id = configs["last_id"];
+    while(load_old(dst_dir, start_id)) {
+        cout << start_id << " sample has been processed !" << endl;
+        ++start_id;
+    }
     for(int i= start_id; i <= last_id; ++i) {
         cout << "*****" << i << "*****\n";
         NewFrame cur{i};
@@ -382,11 +439,16 @@ int main(int argc, const char ** argv) {
         Mat rgb = cur.rgb();
         imshow("edge", cur.edge());
         waitKey(1);
-        Sample rst = process(rgb, i);
+        Sample rst;
+        rst.rgb = cur.rgb();
+        rst.edge = cur.edge();
+        process(rst, i);
         ofstream line_rst(dst_dir+to_string(i)+"_line.txt");
         rst.dump_lines(line_rst);
+        //line_rst.close();
 
         ofstream pt_rst(dst_dir+to_string(i)+"_pt.txt");
         rst.dump_pts(pt_rst);
+        //pt_rst.close();
     }
 }
