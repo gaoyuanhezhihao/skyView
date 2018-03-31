@@ -47,15 +47,18 @@ vector<Point> line_endPoint_in_img(const cv::Size & img_size, const Vec2f & line
     }
     return rst;
 }
-double angle_of_vecs(const Point & vec1, const Point & vec2) {
+double angle_of_vecs(const Point2f & vec1, const Point2f & vec2) {
     double nume = vec1.dot(vec2);
     double denom = cv::norm(vec1) * cv::norm(vec2);
     return std::acos(nume/denom);
 }
 
-static double perpendicular_ratio(const Vec2f & l1, const Vec2f & l2) {
-    Point vec1(cos(l1[THETA]), sin(l1[THETA]));
-    Point vec2(cos(l2[THETA]), sin(l2[THETA]));
+Point2f vec_of_line(const Vec2f & l) {
+    return {sin(l[THETA]), -cos(l[THETA])};
+}
+double perpendicular_ratio(const Vec2f & l1, const Vec2f & l2) {
+    Point2f vec1 = vec_of_line(l1);
+    Point2f vec2 = vec_of_line(l2);
 
     const double agl = angle_of_vecs(vec1, vec2);
 

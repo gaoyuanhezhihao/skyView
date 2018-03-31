@@ -8,24 +8,163 @@
 #include <list>
 #include <cstring>
 #include <cstdlib>
+#include <limits>
 #include "line.hpp"
 #include "debug.hpp"
 #include "Config.hpp"
 #include "base.hpp"
 #include "track.hpp"
 #include "core.hpp"
+#include "line_cross_filter.hpp"
 
 using namespace cv;
 using namespace std;
 
 const int RHO=0;
 const int THETA=1;
+const double MIN_DOUBLE = std::numeric_limits<double>::min();
+
+
+bool SimpleFrame::range_hough(const vector<pair<double, double>> & h_theta_rgs, const vector<pair<double, double>> & v_theta_rgs) {
+    static const int hough_thres = configs["hough_threshold"];
+
+    if(!::range_hough(_edge, h_theta_rgs, hough_thres, _hl)){
+        return false;
+    }
+    if(!::range_hough(_edge, v_theta_rgs, hough_thres, _vl)) {
+        return false;
+    }
+    if(_hl.empty() || _vl.empty()) {
+        return false;
+    }
+    return true;
+}
+
+bool total_hough(const int hough_thres, const Mat & edge, vector<Vec2f> & rst) {
+    static double theta_resolution = configs["theta_resolution"];
+    static double rho_resolution = configs["rho_resolution"];
+
+    HoughLines(edge, rst, rho_resolution, theta_resolution*CV_PI/180, hough_thres, 0, 0 );
+    //cout << "HoughLines:" << rst.size() << endl;
+    //if(!range_hough(_edge, theta_rgs, hough_thres, _lines)){
+        //return false;
+    //}
+    //_lines = merge_close_lines(_lines);
+    return true;
+}
+
+bool find_perpendicualr(const vector<Vec2f> & lines, vector<double> & ppr_max, array<Point2f, 2> & dir_vec) {
+    static  const double PPR_THRES = get_param("perpendicular_thres");
+    CV_Assert(lines.size() == ppr_max.size());
+    const int sz = lines.size();
+    double best_ppr = 0.0;
+    array<int, 2> best_ppr_ids{{-1, -1}};
+    for(int i = 0; i < sz; ++i) {
+        for(int j = i + 1; j < sz; ++j)  {
+            double ppr = perpendicular_ratio(lines[i], lines[j]);
+            if(ppr > ppr_max[i]) {
+                ppr_max[i] = ppr;
+            }
+
+            if(ppr > ppr_max[j]) {
+                ppr_max[j] = ppr;
+            }
+            if(ppr > best_ppr) {
+                best_ppr = ppr;
+                best_ppr_ids[0] = i;
+                best_ppr_ids[1] = j;
+            }
+        }
+    }
+
+    if(best_ppr < PPR_THRES) {
+        return false;
+    }
+    dir_vec[0] = vec_of_line(lines[best_ppr_ids[0]]);
+    dir_vec[1] = vec_of_line(lines[best_ppr_ids[1]]);
+    return true;
+}
+
+void rm_noise_line(vector<Vec2f> & lines, vector<double> & ppr) {
+    static  const double PPR_THRES = get_param("perpendicular_thres");
+
+    const int sz = lines.size();
+    //vector<double> ppr_max(sz, MIN_DOUBLE);
+    //array<Point2f, 2> dir_vec;
+    //if(!find_perpendicualr(lines, ppr_max, dir_vec)) {
+        //return false;
+    //}
+
+    int p = 0;
+    for(int q = 0; q < sz; ++q) {
+        if(ppr[q] > PPR_THRES) {
+            lines[p] = lines[q];
+            ppr[p] = ppr[q];
+            ++p;
+        }
+    }
+    lines.resize(p);
+}
+
+void classify_lines(const vector<Vec2f> & lines,
+        vector<Vec2f> & set1, vector<Vec2f> & set2,
+        const array<Point2f, 2> & dir_vec){
+    CV_Assert(set1.empty());
+    CV_Assert(set2.empty());
+
+    for(const Vec2f & l: lines) {
+        Point2f v = vec_of_line(l);
+        if(angle_of_vecs(v, dir_vec[0]) <\
+                angle_of_vecs(v, dir_vec[1])) {
+            set1.push_back(l);
+        }else {
+            set2.push_back(l);
+        }
+    }
+}
+
+bool SimpleFrame::init() {
+    static const int hough_thres = configs["hough_threshold"];
+    vector<Vec2f> lines;
+    total_hough(hough_thres, _edge, lines);
+    const int sz = lines.size();
+    array<Point2f, 2> dir_vec;
+    vector<double> ppr(sz, MIN_DOUBLE);
+    if(!find_perpendicualr(lines, ppr, dir_vec)) {
+        return false;
+    }
+    rm_noise_line(lines, ppr);
+    classify_lines(lines, _hl, _vl, dir_vec);
+    filter_by_line_cross(_edge.size(), _hl, _vl);
+    return true;
+}
+
+Mat SimpleFrame::draw_lines() const {
+    cv::Mat line_img = _rgb.clone();
+    ::draw_lines(line_img, _hl, GREEN);
+    ::draw_lines(line_img, _vl, BLUE);
+    return line_img;
+}
+
+void SimpleFrame::merge_old_hl(const vector<Vec2f> & old_hl) {
+    for(const Vec2f & l: old_hl) {
+        _hl.push_back(l);
+    }
+}
+
+void SimpleFrame::merge_old_vl(const vector<Vec2f> & old_vl) {
+    for(const Vec2f & l: old_vl) {
+        _vl.push_back(l);
+    }
+}
+
 bool init_frame(NewFrame & f) {
     static const int init_keyPt_thres = configs["init_keyPt_thres"];
     f.detect_lines();
     f.calc_keyPts();
     return int(f.keyPts().size()) > init_keyPt_thres;
 }
+
 void merge_ranges(vector<pair<double, double>> & ranges) {
     if(ranges.empty()) {
         return ;
@@ -76,6 +215,33 @@ bool intersect(const Vec2f & l1, const Vec2f & l2, Point2f & pt) {
     pt.y = nume/denom;
     //cout << "pt=" << pt << endl;
     return true;
+}
+
+bool SimpleFrame::calc_keyPts() {
+    static const int init_keyPt_thres = get_param("init_keyPt_thres");
+    static  const double PPR_THRES = get_param("perpendicular_thres");
+    const int sz1 = _hl.size();
+    const int sz2 = _vl.size();
+    _hl_pt_map = decltype(_hl_pt_map)(sz1);
+    _vl_pt_map = decltype(_vl_pt_map)(sz2);
+
+    Point2f pt;
+    const int width = _edge.cols;
+    const int height = _edge.rows;
+    for(int i = 0; i < sz1; ++i) {
+        for(int j = 0; j < sz2; ++j) {
+            if(PPR_THRES <= perpendicular_ratio(_hl[i], _vl[j])) {
+                if(intersect(_hl[i], _vl[j], pt) &&
+                    0.0f <= pt.x && pt.x < width &&
+                    0.0f <= pt.y && pt.y < height) {
+                    _pts.push_back(pt);
+                    _hl_pt_map[i].push_back(_pts.size()-1);
+                    _vl_pt_map[j].push_back(_pts.size()-1);
+                }
+            }
+        }
+    }
+    return _pts.size() >= size_t(init_keyPt_thres);
 }
 
 bool get_inlier_intersects(const vector<Vec2f> & lines, vector<Point2f> & keyPts, vector<vector<int>> & line_endPt_id_map, const cv::Size & img_size) {
@@ -266,6 +432,19 @@ bool NewFrame::detect_lines(const vector<pair<double, double>> & theta_rgs) {
     return true;
 }
 
+bool NewFrame::detect_lines(const int hough_thres) {
+    static double theta_resolution = configs["theta_resolution"];
+    static double rho_resolution = configs["rho_resolution"];
+
+    HoughLines(_edge, _lines, rho_resolution, theta_resolution*CV_PI/180, hough_thres, 0, 0 );
+    cout << "HoughLines:" << _lines.size() << endl;
+    //if(!range_hough(_edge, theta_rgs, hough_thres, _lines)){
+        //return false;
+    //}
+
+    _lines = merge_close_lines(_lines);
+    return true;
+}
 bool NewFrame::detect_lines() {
     static const int hough_thres = configs["hough_threshold"];
     //cout << "hough_thres = " << hough_thres << endl;
@@ -280,4 +459,8 @@ bool NewFrame::detect_lines() {
 
     _lines = merge_close_lines(_lines);
     return true;
+}
+
+void SimpleFrame::filter_line() {
+    filter_by_line_cross(_edge.size(), _hl, _vl);
 }

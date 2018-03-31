@@ -27,17 +27,16 @@ using namespace cv;
 using namespace std;
 
 template <const char * subfix>
-void log_line_img(const NewFrame & f) {
+void log_line_img(const SimpleFrame & f) {
     static const string dst_dir = configs["result_dir"];
     static ImgLogger im_log(dst_dir, string("line_")+subfix);
-    cv::Mat line_img = f.rgb().clone();
-    draw_lines(line_img, f.lines(), GREEN);
+    Mat line_img = f.draw_lines();
     im_log.save(line_img, f.get_id());
-    //imwrite(dst_dir+"line_"+to_string(f.get_id())+".jpg", line_img);
 }
 
 constexpr const char before[] = "before";
 constexpr const char after[] = "after";
+constexpr const char filtered[] = "filtered";
 
 
 void log_keyPt_img(const NewFrame & f) {
@@ -61,33 +60,25 @@ void test() {
     const int id_last = configs["last_id"];
 
     //redirect_cout();
-    
-    NewFrame prevFrame{id_start};
+    SimpleFrame prevFrame{id_start};
     prevFrame.read_frame();
-    while(!init_frame(prevFrame)){
+    while(!prevFrame.init()){
         cerr << "fail to init_frame " << id_start << "\n";
-        imshow("edge", prevFrame.edge());
-        imshow("rgb", prevFrame.rgb());
-        waitKey(0);
-        prevFrame = NewFrame(++id_start);
+        prevFrame = SimpleFrame(++id_start);
         prevFrame.read_frame();
     }
-    //prevFrame.detect_lines();
-    //prevFrame.calc_keyPts();
-    SHOW(prevFrame.lines().size());
-    SHOW(prevFrame.keyPts().size());
+
     for(int i = id_start+1; i <= id_last; ++i) {
         cout << prevFrame.get_id() << "--" << i << endl;
-        NewFrame cur{i};
+        SimpleFrame cur{i};
         cur.read_frame();
-
 
         printf("%d--%d\n", prevFrame.get_id(), i);
         /* track */
         Tracker tk(prevFrame.keyPts(), prevFrame.edge(),
                 cur.edge());
         if(! tk.run()){
-            if(init_frame(cur)){
+            if(cur.init()){
                 swap(prevFrame, cur);
             }
             continue;
@@ -100,24 +91,31 @@ void test() {
         track_im_log.save(imgTrack, id_name);
 
         /* predict lines */
-        vector<pair<double, double>> theta_rgs;
-        vector<Vec2f> tracked_lines;
-        if(!predict_lines(prevFrame.line_endPt_id_map(), tk, theta_rgs, tracked_lines)){
-            if(init_frame(cur)){
-                swap(prevFrame, cur);
+        vector<pair<double, double>> h_theta_rgs;
+        vector<pair<double, double>> v_theta_rgs;
+        vector<Vec2f> h_tracked_lines;
+        vector<Vec2f> v_tracked_lines;
+
+        predict_lines(prevFrame.get_hl_pt_map(), tk, h_theta_rgs, h_tracked_lines);
+        predict_lines(prevFrame.get_vl_pt_map(), tk, v_theta_rgs, v_tracked_lines);
+        if(!h_theta_rgs.empty() && !v_theta_rgs.empty()) {
+            cout << "predict ok" << endl;
+            if(cur.range_hough(h_theta_rgs, v_theta_rgs)) {
+                cout << "detecting lines ok" << endl;
+                log_line_img<before>(cur);
+                cur.merge_old_hl(h_tracked_lines);
+                cur.merge_old_vl(v_tracked_lines);
+                log_line_img<after>(cur);
+                cur.filter_line();
+            }else {
+                cur.init();
             }
-            continue;
+        }else {
+            cout << "FAIL predict, try init()\n";
+            cur.init();
         }
-        cout << "predict ok" << endl;
         
-        if(!cur.detect_lines(theta_rgs)) {
-            cur.detect_lines();
-        }
-        cout << "detecting lines ok" << endl;
-        log_line_img<before>(cur);
-        cur.merge_tracked_lines(tracked_lines);
-        log_line_img<after>(cur);
-        SHOW(cur.lines().size());
+
 
         /* key Points */
         if(!cur.calc_keyPts() || int(cur.keyPts().size()) < init_keyPt_thres) {

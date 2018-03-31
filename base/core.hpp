@@ -12,7 +12,44 @@
 
 class NewMatch;
 class NewFrame;
+class Frame_Interface{
+    virtual std::vector<cv::Point2f> pts() = 0;
+    virtual int get_id() = 0;
+    virtual const cv::Mat & ref_rgb();
+    virtual cv::Mat clone_rgb();
+};
 
+class SimpleFrame{
+    private:
+        int _id;
+        cv::Mat _rgb;
+        cv::Mat _gray;
+        cv::Mat _edge;
+        std::vector<cv::Vec2f> _hl;
+        std::vector<cv::Vec2f> _vl;
+        std::vector<cv::Point2f> _pts;
+        std::vector<std::vector<int>> _hl_pt_map;
+        std::vector<std::vector<int>> _vl_pt_map;
+    public:
+        SimpleFrame(const int id):_id(id){}
+        bool range_hough(const std::vector<std::pair<double, double>> & h_theta_rgs, const std::vector<std::pair<double, double>> & v_theta_rgs);
+        bool init();
+        bool calc_keyPts();
+        void read_frame();
+        int get_id()const {return _id;}
+        const cv::Mat & edge(){return _edge;}
+        cv::Mat draw_lines() const ;
+        std::vector<std::vector<int>> get_hl_pt_map() {
+            return _hl_pt_map;
+        }
+        std::vector<std::vector<int>> get_vl_pt_map() {
+            return _vl_pt_map;
+        }
+        bool range_hough(const std::vector<std::pair<double, double>> & theta_rgs);
+        void merge_old_hl(const std::vector<cv::Vec2f> & old_hl);
+        void merge_old_vl(const std::vector<cv::Vec2f> & old_vl);
+        void filter_line();
+};
 
 class NewFrame{
     private:
@@ -32,6 +69,8 @@ class NewFrame{
         double _t[2];
         void add_restrict(vector<array<double, 2>> & pt_cur_local, const cv::Point2f & pt_local, NewFrame* pF, const int id, vector<array<double,2>> & pts_global);
     public:
+        bool init();
+
         bool neib_BA();
         void add_match_pts(int this_id, int other, NewFrame* pF);
 
@@ -46,6 +85,7 @@ class NewFrame{
         bool calc_keyPts(); 
         bool detect_lines(const vector<pair<double, double>> & theta_rgs);
         bool detect_lines();
+        bool detect_lines(const int hough_thres);
 
         //void set_key_pts(std::shared_ptr<std::vector<cv::Point2f>> pKeyPts,
         //std::shared_ptr<std::vector<std::vector<int>>> pLine_endPt_id_map) {
