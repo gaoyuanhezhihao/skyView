@@ -23,10 +23,10 @@ class Tracker{
             CV_Assert(!_old_pts.empty());
         }
 
-        const std::vector<cv::Point2f> & get_tracked_pts(){
+        const std::vector<cv::Point2f> & get_tracked_pts()const{
             return _tracked_pts;
         }
-        bool check_status(const int i) {
+        bool check_status(const int i) const{
             return _states[i];
         }
 

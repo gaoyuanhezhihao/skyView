@@ -119,3 +119,24 @@ void NewFrame::read_frame(){
     cv::medianBlur(_gray, _gray, blur_radius);
     Canny(_gray, _edge, Canny_low_thres, Canny_high_thres, Canny_krn_sz);
 }
+void SimpleFrame::read_frame() {
+    static const std::string samples_dir = configs["samples"];
+    static const std::string dst_dir = configs["result_dir"];
+    static const int cols_sky_im = configs["cols_sky_im"];
+    static const int rows_sky_im = configs["rows_sky_im"];
+    static const int blur_radius = configs["blur_radius"];
+    static const int Canny_low_thres = configs["Canny_low_thres"];
+    static const int Canny_high_thres = configs["Canny_high_thres"];
+    static const int Canny_krn_sz= configs["Canny_krn_sz"];
+
+    cv::Mat raw_im = cv::imread(samples_dir + to_string(_id) + ".jpg");
+    _rgb = get_sky_view(raw_im, cols_sky_im, rows_sky_im);
+
+    cvtColor(_rgb, _gray, CV_BGR2GRAY);
+    //blur(_gray, _gray, Size(5, 5));
+    //Canny(_gray, _edge, 50, 100, 5);
+    //blur(_gray, _gray, Size(blur_radius, blur_radius));
+    cv::medianBlur(_gray, _gray, blur_radius);
+    Canny(_gray, _edge, Canny_low_thres, Canny_high_thres, Canny_krn_sz);
+
+}

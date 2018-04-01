@@ -1,0 +1,40 @@
+option = test 
+samples = ./data/direction_c920_640x480/imgs/
+result_dir = ./data/direction_c920_640x480/line_filter/
+H_mat_path = ./data/direction_c920_640x480/H_mat.yml
+
+cols_sky_im = 640 
+rows_sky_im = 600
+#start_id = 690 
+#last_id = 790 
+start_id = 2247 
+last_id = 3000 
+
+merge_line_rho_threshold = 7.0
+merge_line_theta_threshold = 0.1
+show_match = true
+hough_threshold = 200
+theta_predict_width = 5
+theta_resolution = 0.3
+rho_resolution = 1 
+init_keyPt_thres = 2
+track_match_dist_thres = 10
+
+Ex = 325.5
+Ey = 539.0
+Fx = 324.5
+Fy = 602.0
+Gx = 321.5
+Gy = 791.0
+
+match_num_thres = 3
+vertical_theta_thres = 0.1
+
+blur_radius = 5
+Canny_low_thres = 70
+Canny_high_thres = 100
+Canny_krn_sz = 5
+
+perpendicular_thres = 85
+close_line_dist_thres = 20
+minimum_of_match_cnt = 2

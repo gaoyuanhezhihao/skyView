@@ -86,6 +86,15 @@ ImgLogger::ImgLogger(const string dst_dir, const std::string name){
 void ImgLogger::save(const cv::Mat & img, const int id) const {
     save(img, to_string(id));
 }
+void ImgLogger::save(const cv::Mat & img, std::initializer_list<int> v) const {
+    CV_Assert(0 != v.size());
+    auto itr = v.begin();
+    string name = to_string(*itr++);
+    string wall("--");
+    for(;itr!=v.end(); ++itr) {
+        name += wall+to_string(*itr);
+    }
+}
 void ImgLogger::save(const cv::Mat & img, const string name) const {
     boost::filesystem::path fname(name+".jpg");
     FS::path p = _dir / fname;

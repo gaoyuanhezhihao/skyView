@@ -61,12 +61,11 @@ double perpendicular_ratio(const Vec2f & l1, const Vec2f & l2) {
     Point2f vec2 = vec_of_line(l2);
 
     const double agl = angle_of_vecs(vec1, vec2);
-
     return PI_2 - abs(PI_2 - agl);
 }
 
-static void keep_perpendicular_line(vector<Vec2f> & lines, vector<double> pprs) {
-    static  const double PPR_THRES = get_param("perpendicular_thres");
+static void keep_perpendicular_line(vector<Vec2f> & lines, vector<double> & pprs) {
+    static  const double PPR_THRES = double(get_param("perpendicular_thres")) * CV_PI/180;
     CV_Assert(lines.size() == pprs.size());
     const int sz = pprs.size();
     vector<Vec2f> good_lines;
@@ -84,8 +83,10 @@ static void keep_perpendicular_line(vector<Vec2f> & lines, vector<double> pprs) 
 bool is_close_line(const cv::Size img_sz, const Vec2f & l1, const Vec2f & l2) {
     static const int THRES = get_param("close_line_dist_thres");
     vector<Point> endPt1 = line_endPoint_in_img(img_sz, l1);
-    double d_sum = dist_pt2line(l2, endPt1[0]) + dist_pt2line(l2, endPt1[1]);
-    return d_sum < THRES;
+
+    return dist_pt2line(l2, endPt1[0]) < THRES || dist_pt2line(l2, endPt1[1]) < THRES;
+    //double d_sum = dist_pt2line(l2, endPt1[0]) + dist_pt2line(l2, endPt1[1]);
+    //return d_sum < THRES;
 }
 
 void remove_close(vector<Vec2f> & lines, const vector<double> & ppr, const Size img_sz) {
@@ -119,6 +120,7 @@ void remove_close(vector<Vec2f> & lines, const vector<double> & ppr, const Size 
             *p++ = *q;
         }
     }
+    lines.resize(p-lines.begin());
     return;
 }
 

@@ -17,6 +17,7 @@ class ImgLogger{
         ImgLogger(const std::string dst_dir, const std::string name); 
         void save(const cv::Mat & img, const int id) const;
         void save(const cv::Mat & img, const std::string name) const;
+        void save(const cv::Mat & img, std::initializer_list<int> v)const;
     private:
         boost::filesystem::path _dir;
 };

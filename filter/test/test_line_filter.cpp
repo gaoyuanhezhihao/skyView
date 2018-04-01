@@ -22,9 +22,13 @@
 #include "track.hpp"
 #include "core.hpp"
 #include "range_hough.hpp"
+#include "match.hpp"
+#include "motion.hpp"
+#include "predictor.hpp"
 
-using namespace cv;
+
 using namespace std;
+using namespace cv;
 
 template <const char * subfix>
 void log_line_img(const SimpleFrame & f) {
@@ -39,14 +43,13 @@ constexpr const char after[] = "after";
 constexpr const char filtered[] = "filtered";
 
 
-void log_keyPt_img(const NewFrame & f) {
+void log_keyPt_img(const Frame_Interface& f) {
     static const string dst_dir = configs["result_dir"];
     static ImgLogger im_log(dst_dir, "keyPt");
 
     cv::Mat keyPt_img = f.rgb().clone();
-    draw_points(keyPt_img, f.keyPts());
+    draw_points(keyPt_img, f.pts());
     im_log.save(keyPt_img, f.get_id());
-    //imwrite(dst_dir+"keyPt_"+to_string(f.get_id()) + ".jpg", keyPt_img);
 }
 void test() {
     static const int init_keyPt_thres = configs["init_keyPt_thres"];
@@ -68,6 +71,8 @@ void test() {
         prevFrame.read_frame();
     }
 
+    log_line_img<before>(prevFrame);
+    log_keyPt_img(prevFrame);
     for(int i = id_start+1; i <= id_last; ++i) {
         cout << prevFrame.get_id() << "--" << i << endl;
         SimpleFrame cur{i};
@@ -75,7 +80,8 @@ void test() {
 
         printf("%d--%d\n", prevFrame.get_id(), i);
         /* track */
-        Tracker tk(prevFrame.keyPts(), prevFrame.edge(),
+        /* TODO try to use gray image */
+        Tracker tk(prevFrame.pts(), prevFrame.edge(),
                 cur.edge());
         if(! tk.run()){
             if(cur.init()){
@@ -91,89 +97,67 @@ void test() {
         track_im_log.save(imgTrack, id_name);
 
         /* predict lines */
-        vector<pair<double, double>> h_theta_rgs;
-        vector<pair<double, double>> v_theta_rgs;
-        vector<Vec2f> h_tracked_lines;
-        vector<Vec2f> v_tracked_lines;
+        OpticalLinePredictor h_predictor(prevFrame.get_hl_pt_map(), tk);
+        OpticalLinePredictor v_predictor(prevFrame.get_vl_pt_map(), tk);
+        //vector<pair<double, double>> h_theta_rgs;
+        //vector<pair<double, double>> v_theta_rgs;
+        //vector<Vec2f> h_tracked_lines;
+        //vector<Vec2f> v_tracked_lines;
 
-        predict_lines(prevFrame.get_hl_pt_map(), tk, h_theta_rgs, h_tracked_lines);
-        predict_lines(prevFrame.get_vl_pt_map(), tk, v_theta_rgs, v_tracked_lines);
-        if(!h_theta_rgs.empty() && !v_theta_rgs.empty()) {
+        //predict_lines(prevFrame.get_hl_pt_map(), tk, h_theta_rgs, h_tracked_lines);
+        //predict_lines(prevFrame.get_vl_pt_map(), tk, v_theta_rgs, v_tracked_lines);
+        //SHOW(h_tracked_lines.size());
+        //SHOW(v_tracked_lines.size());
+        /* detect lines */
+        if(h_predictor.run() && v_predictor.run()) {
             cout << "predict ok" << endl;
-            if(cur.range_hough(h_theta_rgs, v_theta_rgs)) {
+            if(cur.range_hough(h_predictor.theta_rgs(), v_predictor.theta_rgs())) {
                 cout << "detecting lines ok" << endl;
                 log_line_img<before>(cur);
-                cur.merge_old_hl(h_tracked_lines);
-                cur.merge_old_vl(v_tracked_lines);
+                cur.merge_old_hl(h_predictor.tracked_lines());
+                cur.merge_old_vl(v_predictor.tracked_lines());
                 log_line_img<after>(cur);
                 cur.filter_line();
+                log_line_img<filtered>(cur);
             }else {
+                cout << "FAIL range hough, try init()\n";
                 cur.init();
             }
         }else {
             cout << "FAIL predict, try init()\n";
             cur.init();
         }
-        
-
-
         /* key Points */
-        if(!cur.calc_keyPts() || int(cur.keyPts().size()) < init_keyPt_thres) {
-            if(init_frame(cur)) {
+        if(!cur.calc_keyPts()) {
+            cout << "FAIL calc_keyPts" << endl;
+            if(cur.init()) {
                 swap(prevFrame, cur);
             }
             continue;
         }
         cout << "calc keyPts ok" << endl;
-        SHOW(cur.keyPts().size());
         log_keyPt_img(cur);
 
 
-        static const int match_num_thres = configs["match_num_thres"];
-        shared_ptr<NewMatch> pMch = match_pts(tk, prevFrame, cur);
-        if(nullptr == pMch || pMch->match_num() < match_num_thres) {
+        /* match */
+        SimpleMatcher matcher(&prevFrame, &cur, tk);
+        bool match_succeed = matcher.match();
+        if(match_succeed) {
+            cout << "success match\n";
+            matcher.log_img();
+        }else {
             cout << "fail match\n";
-            if(nullptr != pMch) {
-                cv::Mat img_mch = pMch->draw();
-                {
-                boost::format fmter{"%1%--%2%"};
-                string id_name = str(fmter%prevFrame.get_id()%cur.get_id());
-                match_im_log.save(img_mch, id_name);
-                }
-            }
-            if(init_frame(cur)){
-                swap(prevFrame, cur);
-            }
-            continue;
         }
-        cout << "success match\n";
-
-        cv::Mat img_mch = pMch->draw();
-
         /* motion of car*/
-        if(pMch->ceres_solve_cam_motion()) {
-            if(pMch->calc_car_motion()) {
-                cout << "calc car motion succeed\n";
-                cout << "dx=" << pMch->get_dx() << "\n";
-                cout << "dy=" << pMch->get_dy() << "\n";
-                cout << "theta=" << pMch->get_theta() << "\n";
-                vo_log << prevFrame.get_id() << "--" << cur.get_id()<< "\n";
-                vo_log << "dx=" << pMch->get_dx() << "\n";
-                vo_log << "dy=" << pMch->get_dy() << "\n";
-                vo_log << "theta=" << pMch->get_theta() << "\n";
-            }
+        if(match_succeed) {
+            /*calc new*/
+            Ceres_2frame_motion motion(&matcher);
+            motion.calc_cam_motion();
+        }else {
+            /* predict from history */
         }
-        
-
-        {
-        boost::format fmter{"%1%--%2%"};
-        string id_name = str(fmter%prevFrame.get_id()%cur.get_id());
-        match_im_log.save(img_mch, id_name);
-        }
-        //cv::imwrite(dst_dir+"match_"+to_string(i-1) + "--" + to_string(i) + ".jpg", img_mch);
         swap(prevFrame, cur);
     }
-
     //set_cout_default();
 }
 
@@ -207,4 +191,3 @@ int main(int argc, char ** argv) {
         //files_path.push_back(dir_path + string("/")+ file_name);
     //}
     //return files_path;
-/

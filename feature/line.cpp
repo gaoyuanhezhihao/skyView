@@ -13,7 +13,7 @@
 #include "debug.hpp"
 #include "Config.hpp"
 #include "base.hpp"
-#include "track.hpp"
+//#include "track.hpp"
 #include "core.hpp"
 #include "line_cross_filter.hpp"
 
@@ -54,7 +54,7 @@ bool total_hough(const int hough_thres, const Mat & edge, vector<Vec2f> & rst) {
 }
 
 bool find_perpendicualr(const vector<Vec2f> & lines, vector<double> & ppr_max, array<Point2f, 2> & dir_vec) {
-    static  const double PPR_THRES = get_param("perpendicular_thres");
+    static  const double PPR_THRES = double(get_param("perpendicular_thres")) * CV_PI /180;
     CV_Assert(lines.size() == ppr_max.size());
     const int sz = lines.size();
     double best_ppr = 0.0;
@@ -77,6 +77,8 @@ bool find_perpendicualr(const vector<Vec2f> & lines, vector<double> & ppr_max, a
         }
     }
 
+    //SHOW(best_ppr);
+    //SHOW(PPR_THRES);
     if(best_ppr < PPR_THRES) {
         return false;
     }
@@ -86,8 +88,7 @@ bool find_perpendicualr(const vector<Vec2f> & lines, vector<double> & ppr_max, a
 }
 
 void rm_noise_line(vector<Vec2f> & lines, vector<double> & ppr) {
-    static  const double PPR_THRES = get_param("perpendicular_thres");
-
+    static  const double PPR_THRES = double(get_param("perpendicular_thres")) * CV_PI /180;
     const int sz = lines.size();
     //vector<double> ppr_max(sz, MIN_DOUBLE);
     //array<Point2f, 2> dir_vec;
@@ -133,10 +134,19 @@ bool SimpleFrame::init() {
     if(!find_perpendicualr(lines, ppr, dir_vec)) {
         return false;
     }
+    debug_show_img(_rgb.clone(), lines, "find_perpendicualr");
     rm_noise_line(lines, ppr);
+    debug_show_img(_rgb.clone(), lines, "rm_noise_line");
     classify_lines(lines, _hl, _vl, dir_vec);
+    imshow("classify_lines", draw_lines());
+    waitKey(0);
+    SHOW(_hl.size());
+    SHOW(_vl.size());
     filter_by_line_cross(_edge.size(), _hl, _vl);
-    return true;
+    imshow("filter_by_line_cross", draw_lines());
+    waitKey(0);
+    /*TODO dec hough thre if fail or inc if too many */
+    return calc_keyPts();
 }
 
 Mat SimpleFrame::draw_lines() const {
@@ -219,7 +229,7 @@ bool intersect(const Vec2f & l1, const Vec2f & l2, Point2f & pt) {
 
 bool SimpleFrame::calc_keyPts() {
     static const int init_keyPt_thres = get_param("init_keyPt_thres");
-    static  const double PPR_THRES = get_param("perpendicular_thres");
+    static  const double PPR_THRES = double(get_param("perpendicular_thres")) * CV_PI /180;
     const int sz1 = _hl.size();
     const int sz2 = _vl.size();
     _hl_pt_map = decltype(_hl_pt_map)(sz1);

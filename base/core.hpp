@@ -9,17 +9,21 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "Config.hpp"
 //#include "Pose.hpp"
+using namespace std;
+using namespace cv;
 
 class NewMatch;
 class NewFrame;
 class Frame_Interface{
-    virtual std::vector<cv::Point2f> pts() = 0;
-    virtual int get_id() = 0;
-    virtual const cv::Mat & ref_rgb();
-    virtual cv::Mat clone_rgb();
+    public:
+        virtual ~Frame_Interface(){}
+        virtual const std::vector<cv::Point2f> & pts() const = 0;
+        virtual int get_id() const= 0;
+        virtual const cv::Mat & rgb()const=0;
+        virtual const cv::Mat & edge()const=0;
 };
 
-class SimpleFrame{
+class SimpleFrame: public Frame_Interface{
     private:
         int _id;
         cv::Mat _rgb;
@@ -36,19 +40,21 @@ class SimpleFrame{
         bool init();
         bool calc_keyPts();
         void read_frame();
-        int get_id()const {return _id;}
-        const cv::Mat & edge(){return _edge;}
         cv::Mat draw_lines() const ;
-        std::vector<std::vector<int>> get_hl_pt_map() {
+        const std::vector<std::vector<int>> & get_hl_pt_map() {
             return _hl_pt_map;
         }
-        std::vector<std::vector<int>> get_vl_pt_map() {
+        const std::vector<std::vector<int>> & get_vl_pt_map() {
             return _vl_pt_map;
         }
         bool range_hough(const std::vector<std::pair<double, double>> & theta_rgs);
         void merge_old_hl(const std::vector<cv::Vec2f> & old_hl);
         void merge_old_vl(const std::vector<cv::Vec2f> & old_vl);
         void filter_line();
+        virtual const cv::Mat & rgb()const override {return _rgb;}
+        virtual const vector<Point2f> & pts() const override{return _pts;}
+        virtual int get_id()const override{return _id;}
+        virtual const cv::Mat & edge()const override{return _edge;}
 };
 
 class NewFrame{
