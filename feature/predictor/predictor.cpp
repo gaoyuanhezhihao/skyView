@@ -62,3 +62,22 @@ bool OpticalLinePredictor::run(){
     return true;
 
 }
+
+bool OpticalLinePredictor::predict_from_vertical(const OpticalLinePredictor & other) {
+    CV_Assert(_theta_rgs.empty());
+    CV_Assert(!other._theta_rgs.empty());
+    pair<double, double> rg = other._theta_rgs[0];
+    
+    if(rg.first > CV_PI/2) {
+        rg.first -= CV_PI/2;
+        rg.second -= CV_PI/2;
+    }else {
+        rg.first += CV_PI/2;
+        rg.second += CV_PI/2;
+    }
+    rg.second = min(rg.second, CV_PI);
+    return true;
+    //for(const pair<double, double> & rg: _theta_rgs) {
+
+    //}
+}

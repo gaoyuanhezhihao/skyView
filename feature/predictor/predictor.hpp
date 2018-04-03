@@ -21,6 +21,7 @@ class OpticalLinePredictor{
         OpticalLinePredictor(const vector<vector<int>> & line_pts_map, const Tracker & tracker):_line_pts_map(line_pts_map), _trk(tracker){}
 
         bool run();
+        bool is_failed() const {return _theta_rgs.empty();}
         const vector<pair<double, double>> & theta_rgs()const{
             CV_Assert(runned);
             return _theta_rgs;
@@ -29,5 +30,6 @@ class OpticalLinePredictor{
             CV_Assert(runned);
             return _tracked_lines;
         }
+        bool predict_from_vertical(const OpticalLinePredictor & vl_p);
 };
 #endif //PREDICTOR_H
