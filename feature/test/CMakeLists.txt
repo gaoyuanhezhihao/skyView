@@ -13,6 +13,9 @@ target_link_libraries(test_real_range_hough config base stereo feature)
 add_executable(line_track line_track.cpp)
 target_link_libraries(line_track config base stereo feature)
 
+add_executable(edge_test edge_test.cpp)
+target_link_libraries(edge_test config base stereo)
+
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
