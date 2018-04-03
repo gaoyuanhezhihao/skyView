@@ -6,6 +6,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "Config.hpp"
 #include "base.hpp"
+#include "debug.hpp"
 
 using namespace std;
 using namespace cv;
@@ -29,15 +30,18 @@ vector<Point> line_endPoint_in_img(const cv::Size & img_size, const Vec2f & line
     const double sin_theta = sin(theta);
     vector<Point> candi{{0, -1}, {cols-1, -1}, {-1, 0}, {-1, rows-1}}; 
     vector<Point> rst;
+    //cout << "-----\n";
     for(Point & pt: candi) {
         if(pt.x == -1) {
             pt.x = solve_x(pt.y, rho, cos_theta, sin_theta);
-            if(0 <= pt.x && pt.x < cols) {
+            //SHOW(pt.x);
+            if(0 <= pt.x && pt.x <=cols+1) {
                 rst.push_back(pt);
             }
         }else {
             pt.y = solve_y(pt.x, rho, cos_theta, sin_theta);
-            if(0 <= pt.y && pt.y < rows) {
+            //SHOW(pt.y);
+            if(0 <= pt.y && pt.y <=rows+1) {
                 rst.push_back(pt);
             }
         }
@@ -45,6 +49,8 @@ vector<Point> line_endPoint_in_img(const cv::Size & img_size, const Vec2f & line
             break;
         }
     }
+    //SHOW(rst.size());
+    CV_Assert(2 == rst.size());
     return rst;
 }
 double angle_of_vecs(const Point2f & vec1, const Point2f & vec2) {
@@ -83,7 +89,8 @@ static void keep_perpendicular_line(vector<Vec2f> & lines, vector<double> & pprs
 bool is_close_line(const cv::Size img_sz, const Vec2f & l1, const Vec2f & l2) {
     static const int THRES = get_param("close_line_dist_thres");
     vector<Point> endPt1 = line_endPoint_in_img(img_sz, l1);
-
+    //SHOW(endPt1.size());
+    CV_Assert(2 == endPt1.size());
     return dist_pt2line(l2, endPt1[0]) < THRES || dist_pt2line(l2, endPt1[1]) < THRES;
     //double d_sum = dist_pt2line(l2, endPt1[0]) + dist_pt2line(l2, endPt1[1]);
     //return d_sum < THRES;
