@@ -51,8 +51,13 @@ void log_keyPt_img(const Frame_Interface& f) {
     draw_points(keyPt_img, f.pts());
     im_log.save(keyPt_img, f.get_id());
 }
+
+void log_rgb(const Frame_Interface & f) {
+    static const string dst_dir = configs["result_dir"];
+    static ImgLogger im_log(dst_dir, "rgb");
+    im_log.save(f.rgb(), f.get_id());
+}
 void test() {
-    static const int init_keyPt_thres = configs["init_keyPt_thres"];
     static const string samples_dir = configs["samples"];
     static const string dst_dir = configs["result_dir"];
     static const ImgLogger track_im_log(dst_dir, "track");
@@ -73,6 +78,7 @@ void test() {
 
     log_line_img<before>(prevFrame);
     log_keyPt_img(prevFrame);
+    log_rgb(prevFrame);
     for(int i = id_start+1; i <= id_last; ++i) {
         cout << prevFrame.get_id() << "--" << i << endl;
         SimpleFrame cur{i};
@@ -109,7 +115,19 @@ void test() {
         //SHOW(h_tracked_lines.size());
         //SHOW(v_tracked_lines.size());
         /* detect lines */
-        if(h_predictor.run() && v_predictor.run()) {
+        bool hstat = h_predictor.run();
+        bool vstat = v_predictor.run();
+        if(!hstat && !vstat) {
+            cout << "FAIL predict, try init()\n";
+            cur.init();
+        }else {
+            if(h_predictor.is_failed()) {
+                h_predictor.predict_from_vertical(v_predictor);
+            }
+
+            if(v_predictor.is_failed()) {
+                v_predictor.predict_from_vertical(h_predictor);
+            }
             cout << "predict ok" << endl;
             if(cur.range_hough(h_predictor.theta_rgs(), v_predictor.theta_rgs())) {
                 cout << "detecting lines ok" << endl;
@@ -123,9 +141,6 @@ void test() {
                 cout << "FAIL range hough, try init()\n";
                 cur.init();
             }
-        }else {
-            cout << "FAIL predict, try init()\n";
-            cur.init();
         }
         /* key Points */
         if(!cur.calc_keyPts()) {
