@@ -110,8 +110,8 @@ void rm_noise_line(vector<Vec2f> & lines, vector<double> & ppr) {
 void classify_lines(const vector<Vec2f> & lines,
         vector<Vec2f> & set1, vector<Vec2f> & set2,
         const array<Point2f, 2> & dir_vec){
-    CV_Assert(set1.empty());
-    CV_Assert(set2.empty());
+    //CV_Assert(set1.empty());
+    //CV_Assert(set2.empty());
 
     for(const Vec2f & l: lines) {
         Point2f v = vec_of_line(l);
@@ -134,17 +134,17 @@ bool SimpleFrame::init() {
     if(!find_perpendicualr(lines, ppr, dir_vec)) {
         return false;
     }
-    debug_show_img(_rgb.clone(), lines, "find_perpendicualr");
+    //debug_show_img(_rgb.clone(), lines, "find_perpendicualr");
     rm_noise_line(lines, ppr);
-    debug_show_img(_rgb.clone(), lines, "rm_noise_line");
+    //debug_show_img(_rgb.clone(), lines, "rm_noise_line");
     classify_lines(lines, _hl, _vl, dir_vec);
-    imshow("classify_lines", draw_lines());
-    waitKey(0);
+    //imshow("classify_lines", draw_lines());
+    //waitKey(0);
     SHOW(_hl.size());
     SHOW(_vl.size());
     filter_by_line_cross(_edge.size(), _hl, _vl);
-    imshow("filter_by_line_cross", draw_lines());
-    waitKey(0);
+    //imshow("filter_by_line_cross", draw_lines());
+    //waitKey(0);
     /*TODO dec hough thre if fail or inc if too many */
     return calc_keyPts();
 }
