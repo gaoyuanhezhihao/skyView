@@ -15,10 +15,12 @@ class OpticalLinePredictor{
         const vector<vector<int>> & _line_pts_map;
         const Tracker & _trk;
         vector<pair<double, double>>  _theta_rgs;
+        vector<pair<double, double>> _v_theta_rgs;
+        vector<Vec2f> _v_tracked_lines;
         vector<Vec2f>  _tracked_lines;
         bool runned = false;
-    public:
-        OpticalLinePredictor(const vector<vector<int>> & line_pts_map, const Tracker & tracker):_line_pts_map(line_pts_map), _trk(tracker){}
+        vector<pair<double, double>> get_vertical() const{return _v_theta_rgs;}
+    public: OpticalLinePredictor(const vector<vector<int>> & line_pts_map, const Tracker & tracker):_line_pts_map(line_pts_map), _trk(tracker){}
 
         bool run();
         bool is_failed() const {return _theta_rgs.empty();}

@@ -52,6 +52,9 @@ bool OpticalLinePredictor::run(){
         //}
         const double theta = theta_from_endPoint(tracked_pts[u], tracked_pts[v]);
         add_theta_ranges(theta, _theta_rgs);
+
+        double v_theta = theta>CV_PI/2 ? theta-CV_PI/2: theta+CV_PI/2;
+        add_theta_ranges(v_theta, _v_theta_rgs);
     }
 
     if(_theta_rgs.empty()) {
@@ -66,18 +69,7 @@ bool OpticalLinePredictor::run(){
 bool OpticalLinePredictor::predict_from_vertical(const OpticalLinePredictor & other) {
     CV_Assert(_theta_rgs.empty());
     CV_Assert(!other._theta_rgs.empty());
-    pair<double, double> rg = other._theta_rgs[0];
-    
-    if(rg.first > CV_PI/2) {
-        rg.first -= CV_PI/2;
-        rg.second -= CV_PI/2;
-    }else {
-        rg.first += CV_PI/2;
-        rg.second += CV_PI/2;
-    }
-    rg.second = min(rg.second, CV_PI);
+    _theta_rgs = other.get_vertical();
     return true;
-    //for(const pair<double, double> & rg: _theta_rgs) {
-
-    //}
 }
+
