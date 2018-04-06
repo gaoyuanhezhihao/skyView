@@ -7,7 +7,7 @@ cols_sky_im = 640
 rows_sky_im = 600
 #start_id = 690 
 #last_id = 790 
-start_id = 2247 
+start_id = 900
 last_id = 3000 
 
 merge_line_rho_threshold = 7.0

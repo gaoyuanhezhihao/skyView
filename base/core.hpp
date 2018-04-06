@@ -21,6 +21,7 @@ class Frame_Interface{
         virtual int get_id() const= 0;
         virtual const cv::Mat & rgb()const=0;
         virtual const cv::Mat & edge()const=0;
+        virtual const cv::Mat & gray() const = 0;
 };
 
 class SimpleFrame: public Frame_Interface{
@@ -55,6 +56,7 @@ class SimpleFrame: public Frame_Interface{
         virtual const vector<Point2f> & pts() const override{return _pts;}
         virtual int get_id()const override{return _id;}
         virtual const cv::Mat & edge()const override{return _edge;}
+        virtual const cv::Mat & gray() const override{return _gray;}
 };
 
 class NewFrame{
