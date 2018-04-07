@@ -1,0 +1,13 @@
+src_dir = ./data/dock/imgs/
+dst_dir = ./data/dock/
+sample_id  = 41
+H_mat_path = ./data/direction_c920_640x480/H_mat.yml
+cols_sky_im = 640 
+rows_sky_im = 600
+edge_low_threshold = 70
+edge_high_threshold = 100 
+edge_krn_size = 5 
+floor_point_x = 200 440 440 200
+floor_point_y = 220 220 460 460
+theta_resolution = 1.0
+rho_resolution = 1.0

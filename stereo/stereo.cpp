@@ -68,6 +68,23 @@ bool trsf2sky_view(cv::Mat & src_img, Mat & H, int cols, int rows) {
     return true;
 }
 
+cv::Mat calibrate(string H_mat_path, Mat & src_img, vector<Point2f> mark_points, vector<Point2f> sky_view_pts) {
+    static const int cols_sky_im = get_param("cols_sky_im");
+    static const int rows_sky_im = get_param("rows_sky_im");
+    int * p_sample_ids = new int[mark_points.size()];
+    for (size_t i = 0; i< mark_points.size(); ++i) {
+        p_sample_ids[i] = i;
+    }
+    Mat H;
+    H = get_the_rotation_param(mark_points, sky_view_pts, p_sample_ids, mark_points.size());
+    //trsf2sky_view(src_img, H, cols_sky_im, rows_sky_im);
+    dump_mat(H_mat_path, "H_mat", H);
+
+    cv::Mat warped_sky_view;
+    back_warp(H, cols_sky_im, rows_sky_im, src_img,
+            warped_sky_view);
+    return warped_sky_view;
+}
 
 cv::Mat calibrate(){
     /* --read configurations-- */
