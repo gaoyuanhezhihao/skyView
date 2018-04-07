@@ -6,6 +6,7 @@
 #include <set>
 #include <exception>
 #include "Config.hpp"
+#include "base.hpp"
 
 using namespace std;
 using namespace cv;
@@ -32,16 +33,15 @@ string type2str(int type) {
   return r;
 }
 
-void sobel(cv::Mat & src) {
-    static const uchar thres_value  = get_param("threshold");
+void sobel(cv::Mat & src, cv::Mat & edge, cv::Mat & grad) {
+    static const int thres_value  = get_param("threshold");
     static const string dst_dir = get_param("dst_dir");
     Mat src_gray;
-    Mat grad;
+    //Mat grad;
     int scale = 1;
     int delta = 0;
     int ddepth = CV_16S;
 
-    int c;
 
     /// Load an image
     if( !src.data ) {
@@ -70,42 +70,39 @@ void sobel(cv::Mat & src) {
     /// Total Gradient (approximate)
     addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad );
 
-    cout << "grad.depth() = " << grad.depth() << \
-        " , grad.channels()=" << grad.channels() << endl;
-    cout << "type=" << type2str(grad.type()) << endl;
-    //std::set<uchar> img_values;
-    vector<int> cnt(256, 0);
-    Mat thresholded=cv::Mat::zeros(grad.rows, grad.cols, grad.type());
+    //cout << "grad.depth() = " << grad.depth() << \
+        //" , grad.channels()=" << grad.channels() << endl;
+    //cout << "type=" << type2str(grad.type()) << endl;
+    ////std::set<uchar> img_values;
+    //vector<int> cnt(256, 0);
+    edge = cv::Mat::zeros(grad.rows, grad.cols, grad.type());
     for(int r = 0; r < grad.rows; ++r) {
         for(int c = 0; c < grad.cols; ++c) {
             int v = grad.at<uchar>(r, c);
-            ++cnt[v];
+            //++cnt[v];
             if(v > thres_value) {
-                thresholded.at<uchar>(r, c) = 255;
+                edge.at<uchar>(r, c) = 255;
             }
         }
     }
-    for(int i = 0; i <256; ++i) {
-        if(cnt[i] != 0) {
-            cout << i << ":" << cnt[i] << "\t";
-        }
-    }
+    //for(int i = 0; i <256; ++i) {
+        //if(cnt[i] != 0) {
+            //cout << i << ":" << cnt[i] << "\t";
+        //}
+    //}
 
 
 
-    imwrite(dst_dir + "grad.jpg", grad);
-    imwrite("thresholded.jpg", thresholded);
-    imshow("threholded", thresholded);
-    waitKey(0);
+    //imwrite(dst_dir + "grad.jpg", grad);
+    //imwrite("edge.jpg", edge);
+    //imshow("threholded", edge);
+    //waitKey(0);
     //imshow( window_name, grad );
 
     //waitKey(0);
-
-
 }
 
-int main( int argc, char** argv )
-{
+int main( int argc, char** argv ) {
 
     if( argc != 2) {
         cout <<" Error! not enough param \n Usage: runner config.txt" << endl;
@@ -114,12 +111,22 @@ int main( int argc, char** argv )
     }
     configs.init(argv[1]);
     const int id_start = get_param("start_id");
-    const int id_last = get_pararm("last_id");
+    const int id_last = get_param("last_id");
     const string src_dir = get_param("src_dir");
+    const string dst_dir = get_param("dst_dir");
+    ImgLogger edge_log(dst_dir, "edge");
+    ImgLogger grad_log(dst_dir, "grad");
 
+    Mat edge, grad;
     for(int i =id_start; i < id_last; ++i) {
+        cout << i << "\n";
         Mat src = imread(src_dir + to_string(i) + ".jpg");
-        sobel(src);
+        sobel(src,edge, grad);
+        edge_log.save(edge, i);
+        grad_log.save(grad, i);
+
+        //imwrite(dst_dir + "grad/" + to_string(i) + ".jpg", grad);
+        //imwrite(dst_dir + "edge/" + to_string(i) + ".jpg", edge);
     }
     return 0;
 }

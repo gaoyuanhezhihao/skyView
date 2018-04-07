@@ -1,0 +1,5 @@
+threshold = 15
+src_dir = ./data/direction_c920_640x480/imgs/
+dst_dir = ./data/direction_c920_640x480/sobel/
+start_id = 41 
+last_id = 3000 
