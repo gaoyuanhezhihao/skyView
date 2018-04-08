@@ -38,11 +38,11 @@ bool SimpleMatcher::match() {
             if(min_dist > dist){
                 min_dist = dist;
                 match_id = k;
-                added[k] = true;
             }
         }
         if(-1 != match_id && min_dist < dist_thres) {
             _mch_ids.emplace_back(i, match_id);
+            added[match_id] = true;
         }
     }
     return min_match_cnt <= _mch_ids.size();

@@ -70,6 +70,8 @@ flags = [
 '-isystem', './feature',
 '-isystem', './vo',
 '-isystem', './solver',
+'-isystem', './filter',
+'-isystem', './vo/motion',
 
 # This path will only work on OS X, but extra paths that don't exist are not
 # harmful
