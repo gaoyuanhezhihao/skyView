@@ -11,6 +11,9 @@ class Motion_Interface {
         virtual bool calc_cam_motion() = 0;
         virtual ~Motion_Interface(){}
         virtual void report(ostream & out)const=0;
+        virtual double get_dx()const = 0;
+        virtual double get_dy()const = 0;
+        virtual double get_theta()const = 0;
 };
 
 class Ceres_2frame_motion: public Motion_Interface{
@@ -25,6 +28,9 @@ class Ceres_2frame_motion: public Motion_Interface{
         Ceres_2frame_motion(Matcher_Interface * pMatcher):_pMch(pMatcher) {}
         bool calc_cam_motion()override; 
         void report(ostream & out) const override;
+        virtual double get_dx()const override {return _dx;}
+        virtual double get_dy()const override {return _dy;}
+        virtual double get_theta()const override {return _theta;}
 };
 
 #endif //MOTION_H

@@ -25,6 +25,7 @@
 #include "match.hpp"
 #include "motion.hpp"
 #include "predictor.hpp"
+#include "frame_pose.hpp"
 
 
 using namespace std;
@@ -62,6 +63,8 @@ void test() {
     static const string dst_dir = configs["result_dir"];
     static const ImgLogger track_im_log(dst_dir, "track");
     static const ImgLogger match_im_log(dst_dir, "match");
+    ofstream fail_records(dst_dir + "fails.txt", std::ios::out);
+    ofstream vo_records(dst_dir + "vo.txt", std::ios::out);
 
     std::ofstream vo_log(dst_dir+"vo_log.txt");
     int id_start = configs["start_id"];
@@ -70,6 +73,9 @@ void test() {
     //redirect_cout();
     SimpleFrame prevFrame{id_start};
     prevFrame.read_frame();
+    shared_ptr<Frame_Pose_Interface> pos = std::make_shared<SimpleFramePose>(0, 0, 0);
+
+    prevFrame.set_pose(pos);
     while(!prevFrame.init()){
         cerr << "fail to init_frame " << id_start << "\n";
         prevFrame = SimpleFrame(++id_start);
@@ -81,6 +87,7 @@ void test() {
     log_rgb(prevFrame);
     for(int i = id_start+1; i <= id_last; ++i) {
         cout << prevFrame.get_id() << "--" << i << endl;
+        string cur_pair = to_string(prevFrame.get_id()) + "--" + to_string(i);
         SimpleFrame cur{i};
         cur.read_frame();
 
@@ -90,6 +97,7 @@ void test() {
         Tracker tk(prevFrame.pts(), prevFrame.edge(),
                 cur.edge());
         if(! tk.run()){
+            fail_records << cur_pair << ":" << "track fail\n";
             if(cur.init()){
                 swap(prevFrame, cur);
             }
@@ -105,20 +113,12 @@ void test() {
         /* predict lines */
         OpticalLinePredictor h_predictor(prevFrame.get_hl_pt_map(), tk);
         OpticalLinePredictor v_predictor(prevFrame.get_vl_pt_map(), tk);
-        //vector<pair<double, double>> h_theta_rgs;
-        //vector<pair<double, double>> v_theta_rgs;
-        //vector<Vec2f> h_tracked_lines;
-        //vector<Vec2f> v_tracked_lines;
-
-        //predict_lines(prevFrame.get_hl_pt_map(), tk, h_theta_rgs, h_tracked_lines);
-        //predict_lines(prevFrame.get_vl_pt_map(), tk, v_theta_rgs, v_tracked_lines);
-        //SHOW(h_tracked_lines.size());
-        //SHOW(v_tracked_lines.size());
         /* detect lines */
         bool hstat = h_predictor.run();
         bool vstat = v_predictor.run();
         if(!hstat && !vstat) {
             cout << "FAIL predict, try init()\n";
+            fail_records << cur_pair << ":" << "FAIL predict, try init()\n";
             cur.init();
         }else {
             if(h_predictor.is_failed()) {
@@ -139,12 +139,14 @@ void test() {
                 log_line_img<filtered>(cur);
             }else {
                 cout << "FAIL range hough, try init()\n";
+                fail_records << cur_pair << ":" << "FAIL range hough, try init()\n";
                 cur.init();
             }
         }
         /* key Points */
         if(!cur.calc_keyPts()) {
             cout << "FAIL calc_keyPts" << endl;
+            fail_records << cur_pair << ":FAIL calc_keyPts\n";
             if(cur.init()) {
                 swap(prevFrame, cur);
             }
@@ -161,6 +163,7 @@ void test() {
             cout << "success match\n";
             matcher.log_img();
         }else {
+            fail_records << cur_pair << "fail match\n";
             cout << "fail match\n";
         }
         /* motion of car*/
@@ -168,6 +171,14 @@ void test() {
             /*calc new*/
             Ceres_2frame_motion motion(&matcher);
             motion.calc_cam_motion();
+            //assert(nullptr != prevFrame.get_pose());
+            //prevFrame.get_pose()->report(cout);
+            motion.report(cout);
+            shared_ptr<Frame_Pose_Interface> cur_pose = make_shared<SimpleFramePose> (prevFrame.get_pose(), motion);
+            cur.set_pose(cur_pose);
+            //Motion_Interface & ref_m = motion;
+            //cur_pose->init_by_odom(prevFrame.get_pose(), ref_m);
+            cur_pose->report(cout);
         }else {
             /* predict from history */
         }

@@ -69,6 +69,7 @@ shared_ptr<NewMatch> match_pts(const Tracker & tracker, NewFrame & prevF, NewFra
 }
 
 cv::Mat Tracker::draw(){
+    static const double dist_thres = configs["track_match_dist_thres"];
     CV_Assert(!_old_gray.empty() && !_new_gray.empty());
     CV_Assert(_tracked_pts.size() == _states.size());
     CV_Assert(_tracked_pts.size() == _old_pts.size());
@@ -91,6 +92,7 @@ cv::Mat Tracker::draw(){
         const Point2f & p2 = _tracked_pts[i] + Point2f(img1.cols, 0);
         circle(imgTrack, p1, 3, GREEN, -1, 8);
         circle(imgTrack, p2, 3, GREEN, -1, 8);
+        circle(imgTrack, p2, dist_thres, GREEN, 1);
         cv::line(imgTrack, p1, p2, rand_color(), 1, CV_AA);
         ++ good_track_cnt;
     }

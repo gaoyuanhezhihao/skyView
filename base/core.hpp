@@ -8,10 +8,12 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "Config.hpp"
+//#include "frame_pose.hpp"
 //#include "Pose.hpp"
 using namespace std;
 using namespace cv;
 
+class Frame_Pose_Interface;
 class NewMatch;
 class NewFrame;
 class Frame_Interface{
@@ -22,6 +24,8 @@ class Frame_Interface{
         virtual const cv::Mat & rgb()const=0;
         virtual const cv::Mat & edge()const=0;
         virtual const cv::Mat & gray() const = 0;
+        virtual void set_pose(shared_ptr<Frame_Pose_Interface> pos) = 0;
+        virtual shared_ptr<Frame_Pose_Interface> get_pose() const = 0;
 };
 
 class SimpleFrame: public Frame_Interface{
@@ -35,7 +39,12 @@ class SimpleFrame: public Frame_Interface{
         std::vector<cv::Point2f> _pts;
         std::vector<std::vector<int>> _hl_pt_map;
         std::vector<std::vector<int>> _vl_pt_map;
+        std::shared_ptr<Frame_Pose_Interface> _pPos=nullptr;
     public:
+        void set_pose(shared_ptr<Frame_Pose_Interface> pos)override{
+            _pPos = pos;
+        }
+        shared_ptr<Frame_Pose_Interface> get_pose()const override{return _pPos;}
         SimpleFrame(const int id):_id(id){}
         bool range_hough(const std::vector<std::pair<double, double>> & h_theta_rgs, const std::vector<std::pair<double, double>> & v_theta_rgs);
         bool init();

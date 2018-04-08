@@ -1,0 +1,12 @@
+src_dir = ./data/push_pull/high_fast_indoor/imgs/
+dst_dir = ./data/push_pull/high_fast_indoor/
+sample_id  = 1
+cols_sky_im = 640 
+rows_sky_im = 600
+edge_low_threshold = 70
+edge_high_threshold = 100 
+edge_krn_size = 5 
+floor_point_x = 200 440 440 200
+floor_point_y = 220 220 460 460
+theta_resolution = 1.0
+rho_resolution = 1.0
