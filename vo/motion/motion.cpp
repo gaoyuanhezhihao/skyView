@@ -34,6 +34,9 @@ bool Ceres_2frame_motion::calc_cam_motion() {
     if(!solve_2D_pose(cur_pts, prev_pts, cam_theta, cam_t)) {
         return false;
     }
+    _dx = cam_t[0];
+    _dy = cam_t[1];
+    _theta = cam_theta;
 
     R = Mat::zeros(2, 2, CV_64F);
     t = Mat::zeros(2, 1, CV_64F);
