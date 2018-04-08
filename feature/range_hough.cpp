@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include "line.hpp"
 #include "debug.hpp"
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "base.hpp"
 #include "track.hpp"
 #include "core.hpp"

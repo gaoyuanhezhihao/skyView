@@ -14,7 +14,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "base.hpp"
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "debug.hpp"
 #include "vo.hpp"
 #include "line.hpp"

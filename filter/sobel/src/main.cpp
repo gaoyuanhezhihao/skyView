@@ -5,7 +5,7 @@
 #include <iostream>
 #include <set>
 #include <exception>
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "base.hpp"
 
 using namespace std;

@@ -6,7 +6,7 @@
 #include <array>
 #include <numeric>
 //#include "vanish.hpp"
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "base.hpp"
 #include "core.hpp"
 using namespace std;

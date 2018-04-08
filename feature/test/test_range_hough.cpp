@@ -3,7 +3,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "line.hpp"
 #include "range_hough.hpp"
 

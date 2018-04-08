@@ -8,7 +8,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "panoramas.h"
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "base.hpp"
 #include "core.hpp"
 using namespace cv;

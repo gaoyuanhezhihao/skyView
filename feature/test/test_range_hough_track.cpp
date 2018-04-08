@@ -16,7 +16,7 @@
 //#include <glog/logging.h>
 
 #include "base.hpp"
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "debug.hpp"
 #include "line.hpp"
 #include "stereo.hpp"

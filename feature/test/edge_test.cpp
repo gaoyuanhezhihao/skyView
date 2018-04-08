@@ -15,7 +15,7 @@
 #include <boost/format.hpp>
 
 #include "base.hpp"
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "debug.hpp"
 #include "stereo.hpp"
 #include "core.hpp"

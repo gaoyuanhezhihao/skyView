@@ -1,20 +1,20 @@
 add_executable(test_pt_track test_pt_track.cpp)
-target_link_libraries(test_pt_track config base stereo feature)
+target_link_libraries(test_pt_track haoLib::config base stereo feature)
 
 add_executable(test_range_hough test_range_hough.cpp)
-target_link_libraries(test_range_hough config base stereo feature)
+target_link_libraries(test_range_hough haoLib::config base stereo feature)
 
 add_executable(test_range_hough_track test_range_hough_track.cpp)
-target_link_libraries(test_range_hough_track config base stereo feature)
+target_link_libraries(test_range_hough_track haoLib::config base stereo feature)
 
 add_executable(test_real_range_hough test_real_range_hough.cpp)
-target_link_libraries(test_real_range_hough config base stereo feature)
+target_link_libraries(test_real_range_hough haoLib::config base stereo feature)
 
 add_executable(line_track line_track.cpp)
-target_link_libraries(line_track config base stereo feature)
+target_link_libraries(line_track haoLib::config base stereo feature)
 
 add_executable(edge_test edge_test.cpp)
-target_link_libraries(edge_test config base stereo)
+target_link_libraries(edge_test haoLib::config base stereo)
 
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)

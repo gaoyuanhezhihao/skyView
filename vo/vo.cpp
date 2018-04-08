@@ -9,7 +9,7 @@
 #include "Eigen/Dense"
 
 #include "base.hpp"
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "stereo.hpp"
 #include "core.hpp"
 #include "pose.hpp"

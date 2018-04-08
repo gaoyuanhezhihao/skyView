@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <boost/filesystem.hpp>
 #include "base.hpp"
-#include "Config.hpp"
+#include "config/Config.hpp"
 
 using namespace std;
 using namespace cv;

@@ -8,7 +8,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 //#include "vanish.hpp"
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "base.hpp"
 #include "core.hpp"
 using namespace std;

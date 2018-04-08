@@ -1,6 +1,6 @@
 file(GLOB SRC "*.cpp" "*.hpp")
 add_library(stereo STATIC ${SRC})
-target_link_libraries(stereo base config)
+target_link_libraries(stereo base haoLib::config)
 target_include_directories(stereo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(stereo ${OpenCV_LIBS})
 add_subdirectory(calibrate)

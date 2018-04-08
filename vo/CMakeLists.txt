@@ -1,11 +1,11 @@
 #file(GLOB SRC "*.cpp")
 set(SRC vo.hpp vo.cpp)
 add_library(vo STATIC ${SRC})
-target_link_libraries(vo config base stereo feature pose)
+target_link_libraries(vo haoLib::config base stereo feature pose)
 target_link_libraries(vo ${OpenCV_LIBS})
 target_include_directories(vo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 #add_executable(test_vo test_vo.cpp)
-#target_link_libraries(test_vo vo config base stereo feature)
+#target_link_libraries(test_vo vo haoLib::config base stereo feature)
 add_subdirectory(test)
 add_subdirectory(motion)

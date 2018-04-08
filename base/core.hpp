@@ -7,7 +7,7 @@
 #include <memory>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include "Config.hpp"
+#include "config/Config.hpp"
 //#include "frame_pose.hpp"
 //#include "Pose.hpp"
 using namespace std;

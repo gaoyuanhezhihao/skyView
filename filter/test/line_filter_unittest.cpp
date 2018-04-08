@@ -4,7 +4,7 @@
 #include <string>
 #include <algorithm>
 #include "line_cross_filter.hpp"
-//#include "Config.hpp"
+#include "config/Config.hpp"
 using namespace std;
 class LineFilterUnitTest: public ::testing::Test{
     protected:
