@@ -1,0 +1,5 @@
+start_id = 1 
+last_id =  300
+src_dir = ./data/push_pull/high_slow_indoor/skyview/
+dst_dir = ./data/push_pull/high_slow_indoor/sobel_result/
+threshold = 15

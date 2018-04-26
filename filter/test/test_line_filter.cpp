@@ -91,6 +91,7 @@ void test() {
         SimpleFrame cur{i};
         cur.read_frame();
 
+        log_rgb(cur);
         printf("%d--%d\n", prevFrame.get_id(), i);
         /* track */
         /* TODO try to use gray image */

@@ -1,0 +1,6 @@
+start_id = 1 
+last_id =  1000
+src_dir = ./data/push_pull/high_slow_indoor/skyview/
+dst_dir = ./data/push_pull/high_slow_indoor/color_thres/
+gray_low = 0
+gray_high = 130

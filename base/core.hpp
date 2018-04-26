@@ -61,6 +61,7 @@ class SimpleFrame: public Frame_Interface{
         void merge_old_hl(const std::vector<cv::Vec2f> & old_hl);
         void merge_old_vl(const std::vector<cv::Vec2f> & old_vl);
         void filter_line();
+        void filter_edge();
         virtual const cv::Mat & rgb()const override {return _rgb;}
         virtual const vector<Point2f> & pts() const override{return _pts;}
         virtual int get_id()const override{return _id;}
@@ -142,6 +143,7 @@ class NewFrame{
         }
 
         void read_frame();
+        void filer_edge();
 
 };
 

@@ -1,0 +1,11 @@
+start_id = 1 
+last_id =  1000
+src_dir = ./data/push_pull/high_slow_indoor/skyview/
+dst_dir = ./data/push_pull/high_slow_indoor/color_thres/
+thres1l = 0
+thres2l = 0
+thres3l = 0
+
+thres1h = 50
+thres2h = 50
+thres3h = 50

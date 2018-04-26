@@ -94,7 +94,7 @@ void sobel(cv::Mat & src, cv::Mat & edge, cv::Mat & grad) {
 
 
     //imwrite(dst_dir + "grad.jpg", grad);
-    //imwrite("edge.jpg", edge);
+    //imwrite(dst_dir + "edge.jpg", edge);
     //imshow("threholded", edge);
     //waitKey(0);
     //imshow( window_name, grad );
@@ -114,6 +114,7 @@ int main( int argc, char** argv ) {
     const int id_last = get_param("last_id");
     const string src_dir = get_param("src_dir");
     const string dst_dir = get_param("dst_dir");
+    cout << dst_dir << endl;
     ImgLogger edge_log(dst_dir, "edge");
     ImgLogger grad_log(dst_dir, "grad");
 
