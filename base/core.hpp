@@ -24,8 +24,11 @@ class Frame_Interface{
         virtual const cv::Mat & rgb()const=0;
         virtual const cv::Mat & edge()const=0;
         virtual const cv::Mat & gray() const = 0;
-        virtual void set_pose(shared_ptr<Frame_Pose_Interface> pos) = 0;
+        //virtual void set_pose(shared_ptr<Frame_Pose_Interface> pos) = 0;
         virtual shared_ptr<Frame_Pose_Interface> get_pose() const = 0;
+        virtual const std::vector<cv::Point2f> & global_pts()const = 0;
+        virtual void set_lmk_ids(vector<int> && land_mark_ids);
+        virtual const vector<int> & get_lmk_ids()const;
 };
 
 class SimpleFrame: public Frame_Interface{
@@ -37,13 +40,21 @@ class SimpleFrame: public Frame_Interface{
         std::vector<cv::Vec2f> _hl;
         std::vector<cv::Vec2f> _vl;
         std::vector<cv::Point2f> _pts;
+        std::vector<int> _lmk_ids;
+        std::vector<cv::Point2f> _global_pts;
         std::vector<std::vector<int>> _hl_pt_map;
         std::vector<std::vector<int>> _vl_pt_map;
         std::shared_ptr<Frame_Pose_Interface> _pPos=nullptr;
+        void set_global_pts();
     public:
-        void set_pose(shared_ptr<Frame_Pose_Interface> pos)override{
-            _pPos = pos;
+        void set_lmk_ids(vector<int> && land_mark_ids)override{
+            CV_Assert(_lmk_ids.empty());
+            _lmk_ids=land_mark_ids;
         }
+        const vector<int> & get_lmk_ids()const override{
+            return _lmk_ids;
+        }
+        void set_pose(shared_ptr<Frame_Pose_Interface> pos);
         shared_ptr<Frame_Pose_Interface> get_pose()const override{return _pPos;}
         SimpleFrame(const int id):_id(id){}
         bool range_hough(const std::vector<std::pair<double, double>> & h_theta_rgs, const std::vector<std::pair<double, double>> & v_theta_rgs);
@@ -61,9 +72,11 @@ class SimpleFrame: public Frame_Interface{
         void merge_old_hl(const std::vector<cv::Vec2f> & old_hl);
         void merge_old_vl(const std::vector<cv::Vec2f> & old_vl);
         void filter_line();
+        void rm_extra_line();
         void filter_edge();
         virtual const cv::Mat & rgb()const override {return _rgb;}
         virtual const vector<Point2f> & pts() const override{return _pts;}
+        virtual const vector<Point2f> & global_pts() const override{return _global_pts;}
         virtual int get_id()const override{return _id;}
         virtual const cv::Mat & edge()const override{return _edge;}
         virtual const cv::Mat & gray() const override{return _gray;}

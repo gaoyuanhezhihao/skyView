@@ -72,6 +72,12 @@ flags = [
 '-isystem', './solver',
 '-isystem', './filter',
 '-isystem', './vo/motion',
+'-isystem', './feature/match/',
+'-isystem', './feature/track/',
+'-isystem', './feature/predictor/',
+'-isystem', '/usr/local/include/',
+'-isystem', './vo/wheel_odom/',
+'-isystem', '~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp/BoostParts',
 
 # This path will only work on OS X, but extra paths that don't exist are not
 # harmful

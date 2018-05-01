@@ -1,0 +1,18 @@
+src_dir = ./vo/wheel_odom/test/data/
+dst_dir = ./data/push_pull/far_odom/select_test_wheel_odom/
+sample_id  = 1
+cols_sky_im = 640 
+rows_sky_im = 600
+edge_low_threshold = 70
+edge_high_threshold = 100 
+edge_krn_size = 5 
+floor_point_x = 200 440 440 200
+floor_point_y = 245 245 485 485
+theta_resolution = 0.5
+rho_resolution = 0.5
+id1 = 118
+id2 = 172
+
+
+pxl_unit = 240
+cm_unit = 80

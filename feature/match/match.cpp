@@ -1,3 +1,4 @@
+#include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -22,6 +23,8 @@ bool SimpleMatcher::match() {
         return false;
     }
 
+    vector<int> lmk_ids(new_keyPts.size(), -1);
+    const vector<int> & prev_lkm_ids  = _pf1->get_lmk_ids();
     for(size_t i = 0; i < track_pts.size(); ++i) {
         float min_dist = FLOAT_MAX;
         int match_id = -1;
@@ -42,9 +45,12 @@ bool SimpleMatcher::match() {
         }
         if(-1 != match_id && min_dist < dist_thres) {
             _mch_ids.emplace_back(i, match_id);
+            lmk_ids[match_id] = prev_lkm_ids[i];
+            assert(-1 != prev_lkm_ids[i]);
             added[match_id] = true;
         }
     }
+    _pf1->set_lmk_ids(std::move(lmk_ids));
     return min_match_cnt <= _mch_ids.size();
 }
 
@@ -60,7 +66,9 @@ void SimpleMatcher::log_img() const{
     const vector<cv::Point2f> & kp1 = _pf1->pts();
     const vector<cv::Point2f> & kp2 = _pf2->pts();
     draw_points(imgMatches, kp1, RED);
+    cout << "match ---" << endl;
     for(const pair<int, int> & mch: _mch_ids) {
+        cout << kp1[mch.first].x << ", " <<  kp1[mch.first].y << "-->" << kp2[mch.second].x << ", " << kp2[mch.second].y << endl;
         Point pt1(kp1[mch.first].x, kp1[mch.first].y);
         Point pt2(kp2[mch.second].x+w1, kp2[mch.second].y);
         cv::Scalar color = rand_color();
@@ -68,6 +76,7 @@ void SimpleMatcher::log_img() const{
         cv::circle(imgMatches, pt2, 5, color, 2);
         cv::line(imgMatches, pt1, pt2, color, 1, CV_AA);
     }
+    cout << "match ==="<< endl;
     //return imgMatches;
     logger.save(imgMatches, to_string(_pf1->get_id())+"--" +to_string(_pf2->get_id()) );
     return;
