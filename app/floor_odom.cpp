@@ -27,32 +27,68 @@
 #include "motion.hpp"
 #include "predictor.hpp"
 #include "frame_pose.hpp"
+#include "wheel_odom.hpp"
 
 
 using namespace std;
 using namespace cv;
+using POSE_TYPE=GlobalPose;
 namespace bt=boost::timer;
 //using namespace haoLib;
+class LoggerStream{
+    public:
+        LoggerStream(std::initializer_list<std::ostream*>  handlers):_hdl(handlers) {
+            //for(size_t i = 0; i < handlers.size(); ++i) {
+                //_hdl.push_back(&handlers[i]);
+            //}
+        }
+        template<typename T> 
+            LoggerStream & operator<<(const T& data) {
+                for(size_t i = 0; i < _hdl.size(); ++i) {
+                    (*_hdl[i]) << data;
+
+                }
+                return *this;
+                //for(std::ostream & hd: _hdl) {
+                    //hd << data;
+                //}
+            }
+    private:
+        std::vector<std::ostream *>  _hdl;
+};
+
+//template<>
+//LoggerStream & LoggerStream::operator <<(const decltype<endl>& e) {
+    //for(std::ostream & hd: _hdl) {
+        //hd << endl;
+    //}
+//}
+
 class TimeRecord{
     public:
-        TimeRecord():_ms_sum(0.0), _cnt(0){}
+        TimeRecord(string name):_ms_sum(0.0), _cnt(0), _name(name){}
         void add(bt::nanosecond_type elaps) {
-            _ms_sum += elaps/1000;
+            //cout << _name  << "cost " << elaps/(1000*1000) << " ms\n";
+            _ms_sum += double(elaps)/(1000*1000);
             ++_cnt;
         }
         double average_ms(){
             return _ms_sum / _cnt;
         }
+        void report(ostream & out) {
+            out << _name << " cost " << _ms_sum / _cnt << " ms/frame\n";
+        }
     private:
         double _ms_sum;
         int _cnt;
+        string _name;
 };
 
-TimeRecord trk_tm;
-TimeRecord line_tm;
-TimeRecord pt_tm;
-TimeRecord motion_tm;
-TimeRecord match_tm;
+TimeRecord trk_tm("track");
+TimeRecord line_tm("detect line");
+TimeRecord pt_tm("detect keyPoint");
+TimeRecord motion_tm("motion");
+TimeRecord match_tm("match");
 
 
 template <const char * subfix>
@@ -66,6 +102,7 @@ void log_line_img(const SimpleFrame & f) {
 constexpr const char before[] = "before";
 constexpr const char after[] = "after";
 constexpr const char filtered[] = "filtered";
+constexpr const char keep2[] = "keep2";
 
 
 void log_keyPt_img(const Frame_Interface& f) {
@@ -77,13 +114,21 @@ void log_keyPt_img(const Frame_Interface& f) {
     im_log.save(keyPt_img, f.get_id());
 }
 
+void print_keypt(const Frame_Interface & f) {
+    cout << "key pts ---\n";
+    for(const Point2f & pt: f.pts()) {
+        cout << pt << endl;
+    }
+    cout << "key pts ===\n";
+}
+
 void log_rgb(const Frame_Interface & f) {
     static const string dst_dir = configs["result_dir"];
     static ImgLogger im_log(dst_dir, "rgb");
     im_log.save(f.rgb(), f.get_id());
 }
 
-shared_ptr<Tracker> track(SimpleFrame & prevFrame, SimpleFrame & cur, ofstream & fail_records){
+shared_ptr<Tracker> track(SimpleFrame & prevFrame, SimpleFrame & cur, LoggerStream & log){
     static const string dst_dir = get_param("result_dir");
     static const ImgLogger track_im_log(dst_dir, "track");
     bt::cpu_timer tm;
@@ -94,7 +139,7 @@ shared_ptr<Tracker> track(SimpleFrame & prevFrame, SimpleFrame & cur, ofstream &
     tm.stop();
     trk_tm.add(tm.elapsed().wall);
     if(state) {
-        cout << "track ok" << endl;
+        log<< "track ok" << '\n';
         cv::Mat imgTrack = pTrk->draw();
         boost::format fmter{"%1%--%2%"};
         string id_name = str(fmter%prevFrame.get_id()%cur.get_id());
@@ -102,12 +147,12 @@ shared_ptr<Tracker> track(SimpleFrame & prevFrame, SimpleFrame & cur, ofstream &
         return pTrk;
     }else {
         string cur_pair = to_string(prevFrame.get_id()) + "--" + to_string(cur.get_id());
-        fail_records << cur_pair << ":" << "track fail\n";
+        log << cur_pair << ":" << "track fail\n";
         return nullptr;
     }
 }
 bool predict_line(SimpleFrame & prevFrame, shared_ptr<OpticalLinePredictor> & h_predictor,
-        shared_ptr<OpticalLinePredictor> & v_predictor, Tracker & tk, ofstream & fail_records) {
+        shared_ptr<OpticalLinePredictor> & v_predictor, Tracker & tk, LoggerStream & log) {
     /* predict lines */
     h_predictor = make_shared<OpticalLinePredictor>(prevFrame.get_hl_pt_map(), tk);
     v_predictor = make_shared<OpticalLinePredictor>(prevFrame.get_vl_pt_map(), tk);
@@ -122,24 +167,24 @@ bool predict_line(SimpleFrame & prevFrame, shared_ptr<OpticalLinePredictor> & h_
         if(v_predictor->is_failed()) {
             v_predictor->predict_from_vertical(*h_predictor);
         }
-        cout << "predict ok" << endl;
+        log<< "predict ok" << '\n';
         return true;
     }else {
-        fail_records << prevFrame.get_id() << " failed to track\n";
+        log << prevFrame.get_id() << " failed to track\n";
         return false;
     }
 }
 
-bool detect_lines(SimpleFrame & prevFrame, SimpleFrame & cur, Tracker & tk, ofstream & fail_records) {
+bool detect_lines(SimpleFrame & prevFrame, SimpleFrame & cur, Tracker & tk, LoggerStream & log) {
     bt::cpu_timer tm;
     shared_ptr<OpticalLinePredictor> pPrdH = nullptr;
     shared_ptr<OpticalLinePredictor> pPrdV = nullptr;
-    if(predict_line(prevFrame, pPrdH, pPrdV, tk, fail_records)) {
+    if(predict_line(prevFrame, pPrdH, pPrdV, tk, log)) {
         assert(nullptr != pPrdH);
         assert(nullptr != pPrdV);
         if(cur.range_hough(pPrdH->theta_rgs(), pPrdV->theta_rgs())) {
             tm.stop();
-            cout << "detecting lines ok" << endl;
+            log << "detecting lines ok" << '\n';
             log_line_img<before>(cur);
             tm.resume();
             cur.merge_old_hl(pPrdH->tracked_lines());
@@ -149,14 +194,17 @@ bool detect_lines(SimpleFrame & prevFrame, SimpleFrame & cur, Tracker & tk, ofst
             tm.resume();
             cur.filter_line();
             tm.stop();
-            line_tm.add(tm.elapsed().wall);
             log_line_img<filtered>(cur);
+            cur.rm_extra_line();
+            log_line_img<keep2>(cur);
+
+            line_tm.add(tm.elapsed().wall);
             return true;
         }else {
-            fail_records << "FAIL range hough, try init()\n";
+            log << "FAIL range hough, try init()\n";
         }
     }else {
-        fail_records << "FAIL predict, try init()\n";
+        log << "FAIL predict, try init()\n";
     }
 
     bool state = cur.init();
@@ -165,60 +213,70 @@ bool detect_lines(SimpleFrame & prevFrame, SimpleFrame & cur, Tracker & tk, ofst
     return state;
 }
 
-bool detect_key_pts(SimpleFrame & prevFrame, SimpleFrame & cur, ofstream & fail_records) {
+bool detect_key_pts(SimpleFrame & prevFrame, SimpleFrame & cur, LoggerStream & log) {
     bt::cpu_timer tm;
     if(!cur.calc_keyPts()) {
         tm.stop();
         pt_tm.add(tm.elapsed().wall);
-        cout << "FAIL calc_keyPts" << endl;
+        log<< "FAIL calc_keyPts" << '\n';
         string cur_pair = to_string(prevFrame.get_id()) + "--" + to_string(cur.get_id());
-        fail_records << cur_pair << ":FAIL calc_keyPts\n";
+        log << cur_pair << ":FAIL calc_keyPts\n";
         return false;
     }
     tm.stop();
     pt_tm.add(tm.elapsed().wall);
 
-    cout << "calc keyPts ok" << endl;
+    log << "calc keyPts ok" << '\n';
     log_keyPt_img(cur);
+    //print_keypt(cur);
     return true;
 }
 
-shared_ptr<SimpleMatcher> match(SimpleFrame & prevFrame, SimpleFrame & cur, ofstream & fail_records, Tracker & tk) {
+shared_ptr<SimpleMatcher> match(SimpleFrame & prevFrame, SimpleFrame & cur, LoggerStream & log, Tracker & tk) {
     //SimpleMatcher matcher(&prevFrame, &cur, tk);
-    
+
     bt::cpu_timer tm;
     shared_ptr<SimpleMatcher> pm = make_shared<SimpleMatcher> (&prevFrame, & cur, tk);
     bool match_succeed = pm->match();
     tm.stop();
     match_tm.add(tm.elapsed().wall);
+    //cout << tm.format() << endl;
     if(match_succeed) {
-        cout << "success match\n";
+        log << "success match\n";
         pm->log_img();
         return pm;
     }else {
         string cur_pair = to_string(prevFrame.get_id()) + "--" + to_string(cur.get_id());
-        fail_records << cur_pair << "fail match\n";
-        cout << "fail match\n";
+        log << cur_pair << "fail match\n";
+        log << "fail match\n";
         return nullptr;
     }
 }
 
-bool calc_motion(SimpleFrame & prevFrame, SimpleFrame & cur, shared_ptr<SimpleMatcher> pMch) {
+bool calc_motion(SimpleFrame & prevFrame, SimpleFrame & cur, shared_ptr<SimpleMatcher> pMch, LoggerStream& log) {
     bt::cpu_timer tm;
     /*calc new*/
-    Ceres_2frame_motion motion(pMch.get());
-    motion.calc_cam_motion();
+    //Ceres_2frame_motion motion(pMch.get());
+    Ceres_global_motion mot(pMch.get());
+    if(!mot.calc_cam_motion()) {
+        log << "Warning! calc_cam_motion failed\n";
+        return false;
+    }
     assert(nullptr != prevFrame.get_pose());
     //prevFrame.get_pose()->report(cout);
     tm.stop();
-    motion.report(cout);
+    //mot.report(cout);
+    log << mot.format() << '\n';
+    
     tm.resume();
-    shared_ptr<Frame_Pose_Interface> cur_pose = make_shared<SimpleFramePose> (prevFrame.get_pose(), motion);
+    shared_ptr<Frame_Pose_Interface> cur_pose = make_shared<POSE_TYPE> (mot.get_dx(), mot.get_dy(), mot.get_theta());
+
     motion_tm.add(tm.elapsed().wall);
     cur.set_pose(cur_pose);
     //Motion_Interface & ref_m = motion;
     //cur_pose->init_by_odom(prevFrame.get_pose(), ref_m);
-    cur_pose->report(cout);
+    //cur_pose->report(cout);
+    log << cur_pose->format() << '\n';
     return true;
 }
 
@@ -235,54 +293,80 @@ shared_ptr<SimpleFrame> init_head_frame(int & id, const int last_id) {
     return pf;
 }
 
+void init_pose(shared_ptr<SimpleFrame> brk_head, shared_ptr<SimpleFrame> brk_tail) {
+    /*TODO use more powerfull method*/
+    shared_ptr<Frame_Pose_Interface> pp = WheelOdom::predict_pose(*brk_head, *brk_tail);
+    if(nullptr != pp) {
+        brk_tail->set_pose(pp);
+    }else {
+        throw(std::runtime_error("not implemented"));
+        //brk_tail->set_pose(brk_head->get_pose());
+    }
+}
+
 void test() {
     static const string samples_dir = configs["samples"];
     static const string dst_dir = configs["result_dir"];
     static const ImgLogger track_im_log(dst_dir, "track");
     static const ImgLogger match_im_log(dst_dir, "match");
-    ofstream fail_records(dst_dir + "fails.txt", std::ios::out);
-    ofstream vo_records(dst_dir + "vo.txt", std::ios::out);
+    cout << "dst_dir = " << dst_dir << endl;
+    ofstream file_log(dst_dir + "log.txt");
+    //file_log << "hello log" << endl;
+    //file_log.close();
+    //return ;
+    //std::initializer_list<ostream&> handlers{file_log, cout};
+    //LoggerStream log(handlers);
+    LoggerStream log{&file_log, &cout};
 
-    std::ofstream vo_log(dst_dir+"vo_log.txt");
     int id = configs["start_id"];
     const int id_last = configs["last_id"];
     shared_ptr<SimpleFrame> pPrev = init_head_frame(id, id_last);
-    shared_ptr<Frame_Pose_Interface> pos = std::make_shared<SimpleFramePose>(0, 0, 0);
+    shared_ptr<Frame_Pose_Interface> pos = std::make_shared<POSE_TYPE>(0, 0, 0);
+    //print_keypt(*pPrev);
     pPrev->set_pose(pos);
     for(;id <= id_last; ++id) {
         //SimpleFrame cur{id};
         if(id - pPrev->get_id() > 3) {
-            cout << "Warning!! Broken chain " << pPrev->get_id() << "-X->" << id << endl;
-            pPrev = init_head_frame(id, id_last);
+            log<< "Warning!! Broken chain " << pPrev->get_id() << "-X->" << id << '\n';
+            shared_ptr<SimpleFrame> pNewPrev = init_head_frame(id, id_last);
+            init_pose(pPrev, pNewPrev);
+            pPrev = pNewPrev;
+            //throw logic_error("vo chain break");
             continue;
         }
         shared_ptr<SimpleFrame> pCur = make_shared<SimpleFrame> (id);
         pCur->read_frame();
 
         log_rgb(*pCur);
-        cout << pPrev->get_id() << "--"  << pCur->get_id() << endl;
-        shared_ptr<Tracker> pTrk = track(*pPrev, *pCur, fail_records);
+        log<< '[' << pPrev->get_id() << "--"  << pCur->get_id() << "]\n";
+        shared_ptr<Tracker> pTrk = track(*pPrev, *pCur, log);
         if(nullptr == pTrk) {
             continue;
         }
 
-        if(!detect_lines(*pPrev, *pCur, *pTrk, fail_records)) {
+        if(!detect_lines(*pPrev, *pCur, *pTrk, log)) {
             continue;
         }
 
-        if(!detect_key_pts(*pPrev, *pCur, fail_records)) {
+        if(!detect_key_pts(*pPrev, *pCur, log)) {
             continue;
         }
 
-        shared_ptr<SimpleMatcher> pMch = match(*pPrev, *pCur, fail_records, *pTrk);
+        shared_ptr<SimpleMatcher> pMch = match(*pPrev, *pCur, log, *pTrk);
         if(nullptr == pMch) {
             continue;
         }
 
-        if(calc_motion(*pPrev, *pCur, pMch)) {
+        if(calc_motion(*pPrev, *pCur, pMch, log)) {
             pPrev = pCur;
         }
     }
+
+    trk_tm.report(cout);
+    line_tm.report(cout);
+    pt_tm.report(cout);
+    motion_tm.report(cout);
+    match_tm.report(cout);
 }
 
 int main(int argc, char ** argv) {
