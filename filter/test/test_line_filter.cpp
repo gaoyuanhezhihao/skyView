@@ -130,6 +130,7 @@ void test() {
                 v_predictor.predict_from_vertical(h_predictor);
             }
             cout << "predict ok" << endl;
+
             if(cur.range_hough(h_predictor.theta_rgs(), v_predictor.theta_rgs())) {
                 cout << "detecting lines ok" << endl;
                 log_line_img<before>(cur);

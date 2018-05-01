@@ -96,7 +96,7 @@ bool is_close_line(const cv::Size img_sz, const Vec2f & l1, const Vec2f & l2) {
     //return d_sum < THRES;
 }
 
-void remove_close(vector<Vec2f> & lines, const vector<double> & ppr, const Size img_sz) {
+void remove_close(vector<Vec2f> & lines, vector<double> & ppr, const Size img_sz) {
     CV_Assert(lines.size() == ppr.size());
     const int sz = lines.size();
     vector<bool> keep(sz, true);
@@ -121,14 +121,79 @@ void remove_close(vector<Vec2f> & lines, const vector<double> & ppr, const Size 
 
     auto p = lines.begin();
     auto q = lines.begin();
+
+    auto pp = ppr.begin();
+    auto qq = ppr.begin();
     auto kp= keep.cbegin();
-    for(; q != lines.end(); ++q, ++kp) {
+    for(; q != lines.end(); ++q, ++qq, ++kp) {
         if(*kp) {
             *p++ = *q;
+            *pp++ = *qq;
         }
     }
     lines.resize(p-lines.begin());
+    ppr.resize(pp-ppr.begin());
     return;
+}
+
+int search_idx_of_max(const vector<double> & ppr, const int h, const int e) {
+    assert(e >= h);
+
+    int m = -1;
+    double max = std::numeric_limits<double>::min();
+    for(int i = h; i < e; ++i) {
+        if(ppr[i]> max) {
+            max = ppr[m];
+            m = i;
+        }
+    }
+    return m;
+}
+
+void __keep_best_two(vector<Vec2f> & lines, vector<double> & ppr) {
+    if(lines.size() <= 2) {
+        return ;
+    }
+    assert(lines.size() == ppr.size());
+    int i1 = search_idx_of_max(ppr, 0, ppr.size());
+    swap(lines[0], lines[i1]);
+    swap(ppr[0], ppr[i1]);
+    int i2 = search_idx_of_max(ppr, 1, ppr.size());
+    swap(lines[1], lines[i2]);
+    swap(lines[1], lines[i2]);
+    lines.resize(2);
+}
+
+void keep_best_two(vector<Vec2f> & h_lines, vector<Vec2f> & v_lines) {
+    if(h_lines.size() <= 2 && v_lines.size() <= 2) {
+        return;
+    }
+    vector<double> ppr_h(h_lines.size(), 0);
+    vector<int> match_h(h_lines.size(), -1);
+
+    vector<double> ppr_v(v_lines.size(), 0);
+    vector<int> match_v(v_lines.size(), -1);
+
+    const int h_sz = h_lines.size();
+    const int v_sz = v_lines.size();
+    for(int i = 0; i < h_sz; ++i ) {
+        for(int j = 0; j < v_sz; ++j) {
+            
+            const double ppr = perpendicular_ratio(h_lines[i], v_lines[j]);
+            if(ppr > ppr_h[i]) {
+                ppr_h[i] = ppr;
+                match_h[i] = j;
+            }
+
+            if(ppr > ppr_v[j]) {
+                ppr_v[j] = ppr;
+                match_v[j] = i;
+            }
+        }
+    }
+
+    __keep_best_two(h_lines, ppr_h);
+    __keep_best_two(v_lines, ppr_v);
 }
 
 void filter_by_line_cross(Size img_sz, vector<Vec2f> & h_lines, vector<Vec2f> & v_lines) {
@@ -161,4 +226,6 @@ void filter_by_line_cross(Size img_sz, vector<Vec2f> & h_lines, vector<Vec2f> & 
     remove_close(h_lines, ppr_h, img_sz);
     remove_close(v_lines, ppr_v, img_sz);
 
+    assert(h_lines.size() == ppr_h.size());
+    assert(v_lines.size() == ppr_v.size());
 }
