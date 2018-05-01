@@ -157,12 +157,18 @@ Mat SimpleFrame::draw_lines() const {
 }
 
 void SimpleFrame::merge_old_hl(const vector<Vec2f> & old_hl) {
+    if(!_hl.empty()) {
+        return;
+    }
     for(const Vec2f & l: old_hl) {
         _hl.push_back(l);
     }
 }
 
 void SimpleFrame::merge_old_vl(const vector<Vec2f> & old_vl) {
+    if(!_vl.empty()) {
+        return;
+    }
     for(const Vec2f & l: old_vl) {
         _vl.push_back(l);
     }
@@ -473,4 +479,8 @@ bool NewFrame::detect_lines() {
 
 void SimpleFrame::filter_line() {
     filter_by_line_cross(_edge.size(), _hl, _vl);
+}
+
+void SimpleFrame::rm_extra_line() {
+    keep_best_two(_hl, _vl);
 }
