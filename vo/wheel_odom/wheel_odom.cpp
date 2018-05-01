@@ -5,6 +5,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <boost/filesystem.hpp>
+#include "base.hpp"
 #include "wheel_odom.hpp"
 #include "config/Config.hpp"
 #include "motion.hpp"
@@ -72,6 +73,22 @@ Odom_Pack read_wheel_odom(int i) {
     return odm;
 }
 
+struct GlobalMatchPt{
+    double dist;
+    cv::Point2f g_pt;
+    GlobalMatchPt(double dist, Point2f global_pt):dist(dist), g_pt(global_pt){}
+    GlobalMatchPt():dist(DOUBLE_MAX), g_pt(-1,-1){}
+};
+
+void __predict_match_one(const Frame_Interface & prev, Frame_Interface & cur, vector<int> & ) {
+
+}
+
+vector<pair<Point2f, Point2f>> __predict_matchN(const vector<shared_ptr<Frame_Interface>> & prevs, Frame_Interface & cur) {
+    static const double thres = get_param("wheel_odom_match_dist_thres");
+    
+}
+
 vector<pair<Point2f, Point2f>> __predict_match(Frame_Interface & prev, Frame_Interface & cur) {
     static const double thres = get_param("wheel_odom_match_dist_thres");
     vector<Point2f> prev_pts = prev.pts();
@@ -97,10 +114,16 @@ vector<pair<Point2f, Point2f>> __predict_match(Frame_Interface & prev, Frame_Int
         cout << pt << "\n";
     }
     vector<pair<Point2f, Point2f>> mch_pts;
+    vector<int> lmk_ids(cur_sz, -1);
+    const vector<int> & prev_lmk_ids = prev.get_lmk_ids();
+    vector<bool> added(cur_sz, false);
     for(int i = 0; i < prev_sz; ++i) {
         float min_dist = FLOAT_MAX;
         int mch_id = -1;
         for(int j = 0; j < cur_sz; ++j) {
+            if(added[j]) {
+                continue;
+            }
             float dist = street_dist(prev_pts[i], cur_pts[j]);
             if(dist < min_dist) {
                 min_dist = dist;
@@ -111,9 +134,11 @@ vector<pair<Point2f, Point2f>> __predict_match(Frame_Interface & prev, Frame_Int
         cout << "min_dist=" << min_dist << endl;
         if(min_dist < thres) {
             mch_pts.push_back({prev_global_pts[i], cur_pts[mch_id]});
+            lmk_ids[mch_id] = prev_lmk_ids[i];
+            assert(-1 != prev_lmk_ids[i]);
+            added[mch_id] = true;
         }
     }
-
     return mch_pts;
 }
 

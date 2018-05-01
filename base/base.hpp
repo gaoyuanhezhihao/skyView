@@ -7,6 +7,9 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include <boost/filesystem.hpp>
+#include <limits>
+
+#define DOUBLE_MAX std::numeric_limits<double>::max()
 
 const cv::Scalar GREEN(0, 255, 0);
 const cv::Scalar RED(0, 0, 255);
