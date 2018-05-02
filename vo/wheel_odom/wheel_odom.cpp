@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <memory>
+#include <cassert>
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <boost/filesystem.hpp>
@@ -9,7 +10,7 @@
 #include "wheel_odom.hpp"
 #include "config/Config.hpp"
 #include "motion.hpp"
-#include <cassert>
+#include "frame_map.hpp"
 
 using namespace std;
 using namespace cv;
@@ -80,13 +81,85 @@ struct GlobalMatchPt{
     GlobalMatchPt():dist(DOUBLE_MAX), g_pt(-1,-1){}
 };
 
-void __predict_match_one(const Frame_Interface & prev, Frame_Interface & cur, vector<int> & ) {
+void __predict_match_one(const Frame_Interface & prev, Frame_Interface & cur, vector<GlobalMatchPt> & matches) {
+    assert(cur.pts().size() == matches.size());
+    const vector<Point2f> & prev_global_pts = prev.global_pts();
+    const vector<Point2f> & cur_pts = cur.pts();
+    const vector<Point2f> & prev_pts = prev.pts();
+    const int prev_sz = prev_pts.size();
+    const int cur_sz = cur_pts.size();
+    WheelOdom odm(prev.get_id(), cur.get_id());
+    vector<Point2f> warped_pts = odm.transform(prev_pts);
+    for(int i = 0; i < prev_sz; ++i) {
+        double min_dist = DOUBLE_MAX;
+        int m = -1;
+        for(int j = 0; j < cur_sz; ++j) {
+            double dist = street_dist(warped_pts[i], cur_pts[j]);
+            if(dist < min_dist) {
+                min_dist = dist;
+                m = j;
+            }
+        }
+        if(-1 != m && matches[m].dist < min_dist) {
+            matches[m].dist = min_dist;
+            matches[m].g_pt = prev_global_pts[i];
+        }
+    }
+    return;
+}
 
+int cnt_valid_match(const vector<GlobalMatchPt> & matches) {
+    static const double thres = get_param("wheel_odom_match_dist_thres");
+    int cnt = 0;
+    for(const GlobalMatchPt & mch: matches) {
+        if(mch.dist < thres) {
+            ++cnt;
+        }
+    }
+    return cnt;
+}
+vector<pair<Point2f, Point2f>> dyn_predict_match(Frame_Interface & cur) {
+    static const int max_try = get_param("wheel_odom_dyn_match_max_try");
+    static const double thres = get_param("wheel_odom_match_dist_thres");
+    vector<GlobalMatchPt> matches(cur.pts().size());
+    for(int i = 1; i <= max_try; ++i) {
+        if(cur.get_id() - i < 0)  {
+            break;
+        }
+        shared_ptr<Frame_Interface> prev = get_frame(cur.get_id()-i);
+        if(nullptr == prev) {
+            continue;
+        }
+
+        __predict_match_one(*prev, cur, matches);
+    }
+
+    const vector<Point2f> & cur_pts = cur.pts();
+    vector<pair<Point2f, Point2f>> rst;
+    for(size_t i = 0; i < cur_pts.size(); ++i) {
+        GlobalMatchPt & mch = matches[i];
+        if(mch.dist < thres) {
+            rst.emplace_back(mch.g_pt, cur_pts[i]);
+        }
+    }
+    return rst;
 }
 
 vector<pair<Point2f, Point2f>> __predict_matchN(const vector<shared_ptr<Frame_Interface>> & prevs, Frame_Interface & cur) {
     static const double thres = get_param("wheel_odom_match_dist_thres");
-    
+    vector<GlobalMatchPt> matches(cur.pts().size());
+    for(shared_ptr<Frame_Interface> pf: prevs) {
+        __predict_match_one(*pf, cur, matches);
+    }
+    const vector<Point2f> & cur_pts = cur.pts();
+    vector<pair<Point2f, Point2f>> rst;
+    for(size_t i = 0; i < cur_pts.size(); ++i) {
+        GlobalMatchPt & mch = matches[i];
+        if(mch.dist < thres) {
+            rst.emplace_back(mch.g_pt, cur_pts[i]);
+        }
+    }
+    return rst;
 }
 
 vector<pair<Point2f, Point2f>> __predict_match(Frame_Interface & prev, Frame_Interface & cur) {
@@ -147,6 +220,18 @@ shared_ptr<Frame_Pose_Interface> WheelOdom::predict_pose(Frame_Interface & prev,
     vector<pair<Point2f, Point2f>> mch_pts = __predict_match(prev, cur);
     if(mch_pts.size() >= 2) {
         return Ceres_solve_im2g(*prev.get_pose(), mch_pts);
+    }else {
+        return nullptr;
+    }
+}
+
+
+shared_ptr<Frame_Pose_Interface> WheelOdom::predict_pose_N(Frame_Interface & cur) {
+    static const int match_thres = get_param("minimum_of_match_cnt");
+    vector<pair<Point2f, Point2f>> matches = dyn_predict_match(cur);
+    if(int(matches.size()) >= match_thres) {
+        shared_ptr<Frame_Interface> prev = get_first_prev_frame(cur);
+        return Ceres_solve_im2g(*prev->get_pose(), matches);
     }else {
         return nullptr;
     }

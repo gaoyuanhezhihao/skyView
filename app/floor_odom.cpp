@@ -295,7 +295,7 @@ shared_ptr<SimpleFrame> init_head_frame(int & id, const int last_id) {
 
 void init_pose(shared_ptr<SimpleFrame> brk_head, shared_ptr<SimpleFrame> brk_tail) {
     /*TODO use more powerfull method*/
-    shared_ptr<Frame_Pose_Interface> pp = WheelOdom::predict_pose(*brk_head, *brk_tail);
+    shared_ptr<Frame_Pose_Interface> pp = WheelOdom::predict_pose_N(*brk_tail);
     if(nullptr != pp) {
         brk_tail->set_pose(pp);
     }else {

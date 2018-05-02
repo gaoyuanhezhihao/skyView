@@ -26,6 +26,7 @@ Odom_Pack read_wheel_odom(int id);
 class WheelOdom{
     public:
         static shared_ptr<Frame_Pose_Interface> predict_pose(Frame_Interface & prev, Frame_Interface & cur);
+        static shared_ptr<Frame_Pose_Interface> predict_pose_N(Frame_Interface & cur);
         WheelOdom(int fromID, int toID);
         std::vector<cv::Point> transform(const std::vector<cv::Point> & fromPts);
         std::vector<cv::Point2f> transform(const std::vector<cv::Point2f> & fromPts);

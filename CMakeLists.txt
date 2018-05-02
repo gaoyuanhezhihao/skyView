@@ -13,7 +13,7 @@ SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 find_package(OpenCV REQUIRED)
 find_package(haoLib REQUIRED)
-FIND_PACKAGE(Boost 1.58 COMPONENTS timer REQUIRED )
+FIND_PACKAGE(Boost COMPONENTS timer REQUIRED )
 include_directories( "/usr/include/eigen3" )
 #add_subdirectory(main)
 enable_testing()

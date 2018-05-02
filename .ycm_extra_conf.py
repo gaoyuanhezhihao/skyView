@@ -78,26 +78,7 @@ flags = [
 '-isystem', '/usr/local/include/',
 '-isystem', './vo/wheel_odom/',
 '-isystem', '~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp/BoostParts',
-
-# This path will only work on OS X, but extra paths that don't exist are not
-# harmful
-#'/System/Library/Frameworks/Python.framework/Headers',
-#'-isystem',
-#'../llvm/include',
-#'-isystem',
-#'../llvm/tools/clang/include',
-#'-I',
-#'.',
-#'-I',
-#'./ClangCompleter',
-#'-isystem',
-#'./tests/gmock/gtest',
-#'-isystem',
-#'./tests/gmock/gtest/include',
-#'-isystem',
-#'./tests/gmock',
-#'-isystem',
-#'./tests/gmock/include',
+'-isystem', './vo/bundle_adjust/',
 ]
 
 

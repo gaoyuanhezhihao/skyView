@@ -27,8 +27,12 @@ class Frame_Interface{
         //virtual void set_pose(shared_ptr<Frame_Pose_Interface> pos) = 0;
         virtual shared_ptr<Frame_Pose_Interface> get_pose() const = 0;
         virtual const std::vector<cv::Point2f> & global_pts()const = 0;
-        virtual void set_lmk_ids(vector<int> && land_mark_ids);
-        virtual const vector<int> & get_lmk_ids()const;
+        virtual void set_lmk_ids(vector<int> && land_mark_ids){
+            throw std::logic_error("set_lmk_ids not implemented");
+        }
+        virtual const vector<int> & get_lmk_ids()const {
+            throw std::logic_error("get_lmk_ids not implemented");
+        }
 };
 
 class SimpleFrame: public Frame_Interface{
