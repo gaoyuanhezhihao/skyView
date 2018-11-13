@@ -4,7 +4,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
-#include "Config.hpp"
+#include "config/Config.hpp"
 #include "panoramas.h"
 #include "line.hpp"
 #include "debug.hpp"

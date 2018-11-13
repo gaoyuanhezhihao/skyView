@@ -28,6 +28,7 @@
 #include "predictor.hpp"
 #include "frame_pose.hpp"
 #include "wheel_odom.hpp"
+#include "frame_map.hpp"
 
 
 using namespace std;
@@ -321,17 +322,14 @@ void test() {
     int id = configs["start_id"];
     const int id_last = configs["last_id"];
     shared_ptr<SimpleFrame> pPrev = init_head_frame(id, id_last);
-    shared_ptr<Frame_Pose_Interface> pos = std::make_shared<POSE_TYPE>(0, 0, 0);
     //print_keypt(*pPrev);
-    pPrev->set_pose(pos);
-    for(;id <= id_last; ++id) {
-        //SimpleFrame cur{id};
+    pPrev->init_pose();
+    for(id+=1;id <= id_last; ++id) {
         if(id - pPrev->get_id() > 3) {
             log<< "Warning!! Broken chain " << pPrev->get_id() << "-X->" << id << '\n';
             shared_ptr<SimpleFrame> pNewPrev = init_head_frame(id, id_last);
             init_pose(pPrev, pNewPrev);
             pPrev = pNewPrev;
-            //throw logic_error("vo chain break");
             continue;
         }
         shared_ptr<SimpleFrame> pCur = make_shared<SimpleFrame> (id);
@@ -358,6 +356,7 @@ void test() {
         }
 
         if(calc_motion(*pPrev, *pCur, pMch, log)) {
+            add_frame_map(pPrev);
             pPrev = pCur;
         }
     }

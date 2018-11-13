@@ -16,8 +16,12 @@ void add_frame_map(shared_ptr<Frame_Interface> pf) {
 
 shared_ptr<Frame_Interface> get_frame(const int i) {
     const int len = _frame_map.size();
-    assert(i < len);
-    return _frame_map[i];
+    //assert(i < len);
+    if(i<len) {
+        return _frame_map[i];
+    }else {
+        return nullptr;
+    }
 }
 
 shared_ptr<Frame_Interface> get_first_prev_frame(Frame_Interface & cur) {

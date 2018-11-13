@@ -251,6 +251,7 @@ bool SimpleFrame::calc_keyPts() {
                     0.0f <= pt.x && pt.x < width &&
                     0.0f <= pt.y && pt.y < height) {
                     _pts.push_back(pt);
+                    _lmk_ids.push_back(-1);
                     _hl_pt_map[i].push_back(_pts.size()-1);
                     _vl_pt_map[j].push_back(_pts.size()-1);
                 }

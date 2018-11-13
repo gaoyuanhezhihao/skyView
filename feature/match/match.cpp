@@ -23,8 +23,9 @@ bool SimpleMatcher::match() {
         return false;
     }
 
-    vector<int> lmk_ids(new_keyPts.size(), -1);
+    //vector<int> lmk_ids(new_keyPts.size(), -1);
     const vector<int> & prev_lkm_ids  = _pf1->get_lmk_ids();
+    CV_Assert(_pf1->pts().size() == _pf1->get_lmk_ids().size());
     for(size_t i = 0; i < track_pts.size(); ++i) {
         float min_dist = FLOAT_MAX;
         int match_id = -1;
@@ -45,12 +46,13 @@ bool SimpleMatcher::match() {
         }
         if(-1 != match_id && min_dist < dist_thres) {
             _mch_ids.emplace_back(i, match_id);
-            lmk_ids[match_id] = prev_lkm_ids[i];
+            //lmk_ids[match_id] = prev_lkm_ids[i];
+            _pf2->set_lmk_id(match_id, prev_lkm_ids[i]);
             assert(-1 != prev_lkm_ids[i]);
             added[match_id] = true;
         }
     }
-    _pf1->set_lmk_ids(std::move(lmk_ids));
+    //_pf2->set_lmk_ids(std::move(lmk_ids));
     return min_match_cnt <= _mch_ids.size();
 }
 

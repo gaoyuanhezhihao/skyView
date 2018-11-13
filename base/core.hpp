@@ -27,7 +27,7 @@ class Frame_Interface{
         //virtual void set_pose(shared_ptr<Frame_Pose_Interface> pos) = 0;
         virtual shared_ptr<Frame_Pose_Interface> get_pose() const = 0;
         virtual const std::vector<cv::Point2f> & global_pts()const = 0;
-        virtual void set_lmk_ids(vector<int> && land_mark_ids){
+        virtual void set_lmk_id(int pt_id, int lmk_id){
             throw std::logic_error("set_lmk_ids not implemented");
         }
         virtual const vector<int> & get_lmk_ids()const {
@@ -51,13 +51,15 @@ class SimpleFrame: public Frame_Interface{
         std::shared_ptr<Frame_Pose_Interface> _pPos=nullptr;
         void set_global_pts();
     public:
-        void set_lmk_ids(vector<int> && land_mark_ids)override{
-            CV_Assert(_lmk_ids.empty());
-            _lmk_ids=land_mark_ids;
+        void set_lmk_id(int pt_id, int lmk_id)override{
+            CV_Assert(_lmk_ids.size() == _pts.size());
+            //CV_Assert(_lmk_ids.empty());
+            _lmk_ids[pt_id] = lmk_id;
         }
         const vector<int> & get_lmk_ids()const override{
             return _lmk_ids;
         }
+        void init_pose();
         void set_pose(shared_ptr<Frame_Pose_Interface> pos);
         shared_ptr<Frame_Pose_Interface> get_pose()const override{return _pPos;}
         SimpleFrame(const int id):_id(id){}

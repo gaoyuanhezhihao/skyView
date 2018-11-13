@@ -1,0 +1,15 @@
+option = test 
+samples = ./data/direction_c920_640x480/imgs/
+result_dir = ./data/direction_c920_640x480/edge_test/
+H_mat_path = ./data/direction_c920_640x480/H_mat.yml
+
+cols_sky_im = 640 
+rows_sky_im = 600
+start_id = 41
+last_id = 2247
+
+
+blur_radius = 3
+Canny_low_thres = 10
+Canny_high_thres = 30 
+Canny_krn_sz = 3

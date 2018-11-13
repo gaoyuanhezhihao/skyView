@@ -11,6 +11,7 @@
 #include "config/Config.hpp"
 #include "motion.hpp"
 #include "frame_map.hpp"
+#include "LandMarkMap.hpp"
 
 using namespace std;
 using namespace cv;
@@ -76,33 +77,41 @@ Odom_Pack read_wheel_odom(int i) {
 
 struct GlobalMatchPt{
     double dist;
-    cv::Point2f g_pt;
-    GlobalMatchPt(double dist, Point2f global_pt):dist(dist), g_pt(global_pt){}
-    GlobalMatchPt():dist(DOUBLE_MAX), g_pt(-1,-1){}
+    //cv::Point2f g_pt;
+    int lmk_id;
+    GlobalMatchPt(double dist, int lmk_id):dist(dist), lmk_id(lmk_id){}
+    GlobalMatchPt():dist(DOUBLE_MAX), lmk_id(-1){}
 };
 
 void __predict_match_one(const Frame_Interface & prev, Frame_Interface & cur, vector<GlobalMatchPt> & matches) {
     assert(cur.pts().size() == matches.size());
-    const vector<Point2f> & prev_global_pts = prev.global_pts();
+    //const vector<Point2f> & prev_global_pts = prev.global_pts();
+    const vector<int> & prev_lmk_ids = prev.get_lmk_ids();
     const vector<Point2f> & cur_pts = cur.pts();
     const vector<Point2f> & prev_pts = prev.pts();
     const int prev_sz = prev_pts.size();
     const int cur_sz = cur_pts.size();
     WheelOdom odm(prev.get_id(), cur.get_id());
+    cout << "prev pts:";
+    print_pts(prev_pts);
     vector<Point2f> warped_pts = odm.transform(prev_pts);
-    for(int i = 0; i < prev_sz; ++i) {
+    cout << "warped_pts:";
+    print_pts(warped_pts);
+    cout << "cur_pts:";
+    print_pts(cur_pts);
+    for(int p = 0; p < prev_sz; ++p) {
         double min_dist = DOUBLE_MAX;
         int m = -1;
-        for(int j = 0; j < cur_sz; ++j) {
-            double dist = street_dist(warped_pts[i], cur_pts[j]);
+        for(int c = 0; c < cur_sz; ++c) {
+            double dist = street_dist(warped_pts[p], cur_pts[c]);
             if(dist < min_dist) {
                 min_dist = dist;
-                m = j;
+                m = c;
             }
         }
-        if(-1 != m && matches[m].dist < min_dist) {
+        if(-1 != m && min_dist < matches[m].dist) {
             matches[m].dist = min_dist;
-            matches[m].g_pt = prev_global_pts[i];
+            matches[m].lmk_id = prev_lmk_ids[p];
         }
     }
     return;
@@ -133,13 +142,16 @@ vector<pair<Point2f, Point2f>> dyn_predict_match(Frame_Interface & cur) {
 
         __predict_match_one(*prev, cur, matches);
     }
+    for(auto & m:matches) {
+        cout << "dist=" << m.dist << ", pt=" <<  get_land_mark(m.lmk_id)<< endl;
+    }
 
     const vector<Point2f> & cur_pts = cur.pts();
     vector<pair<Point2f, Point2f>> rst;
     for(size_t i = 0; i < cur_pts.size(); ++i) {
         GlobalMatchPt & mch = matches[i];
         if(mch.dist < thres) {
-            rst.emplace_back(mch.g_pt, cur_pts[i]);
+            rst.emplace_back(get_land_mark(mch.lmk_id), cur_pts[i]);
         }
     }
     return rst;
@@ -156,7 +168,7 @@ vector<pair<Point2f, Point2f>> __predict_matchN(const vector<shared_ptr<Frame_In
     for(size_t i = 0; i < cur_pts.size(); ++i) {
         GlobalMatchPt & mch = matches[i];
         if(mch.dist < thres) {
-            rst.emplace_back(mch.g_pt, cur_pts[i]);
+            rst.emplace_back(get_land_mark(mch.lmk_id), cur_pts[i]);
         }
     }
     return rst;

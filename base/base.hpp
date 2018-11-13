@@ -61,4 +61,5 @@ float street_dist(const cv::Point2f & p1, const cv::Point2f & p2);
 void set_cout_default();
 void redirect_cout();
 int dist_pt2line(const cv::Vec2f & line, const cv::Point & pt);
+void print_pts(const std::vector<cv::Point2f> & pts);
 #endif //BASE_H

@@ -11,6 +11,12 @@
 using namespace std;
 using namespace cv;
 namespace FS=boost::filesystem;
+void print_pts(const vector<Point2f> & pts) {
+    for(const Point2f & pt: pts) {
+        cout << pt << "|";
+    }
+    cout << endl;
+}
 cv::Scalar rand_color() {
     static cv::RNG rng(12345);
     return cv::Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));

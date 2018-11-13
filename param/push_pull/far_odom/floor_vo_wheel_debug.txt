@@ -6,8 +6,8 @@ H_mat_path = ./data/push_pull/far_odom/H_mat.yml
 
 cols_sky_im = 630 
 rows_sky_im = 680
-start_id = 190
-last_id = 210
+start_id = 249
+last_id = 260
 
 merge_line_rho_threshold = 7.0
 merge_line_theta_threshold = 0.1
@@ -18,13 +18,6 @@ theta_resolution = 0.3
 rho_resolution = 1 
 init_keyPt_thres = 2
 track_match_dist_thres = 50
-
-Ex = 325.5
-Ey = 539.0
-Fx = 324.5
-Fy = 602.0
-Gx = 321.5
-Gy = 791.0
 
 match_num_thres = 3
 vertical_theta_thres = 0.1
@@ -40,6 +33,7 @@ minimum_of_match_cnt = 2
 
 ceres_error_thres = 10
 wheel_odom_match_dist_thres = 50
+wheel_odom_dyn_match_max_try = 7
 
 pxl_unit = 240
 cm_unit = 80

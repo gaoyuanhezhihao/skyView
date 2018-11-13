@@ -3,6 +3,7 @@
 #include "frame_pose.hpp"
 #include "motion.hpp"
 #include "boost/format.hpp"
+#include "LandMarkMap.hpp"
 using namespace std;
 
 SimpleFramePose::SimpleFramePose(shared_ptr<Frame_Pose_Interface>  prev_pose, const Motion_Interface & mot){
@@ -53,17 +54,26 @@ Point2f GlobalPose::pt_g2im(const Point2f & pt_g){
 void SimpleFrame::set_global_pts() {
     CV_Assert(_pts.size() > 0);
     CV_Assert(_global_pts.empty());/*only set one time*/
-
+    _global_pts = vector<Point2f> (_pts.size(), Point2f(0.0, 0.0));
     int sz = _pts.size();
-    cout << "DEBUG---" << endl;
     for(int i = 0; i < sz; ++i) {
         //cout << "DEBUG:" << _pPos->whoami() << endl;
-        _global_pts.push_back(_pPos->pt_im2g(_pts[i]));
-        cout << _pts[i]  << "-->" << _global_pts[i] << endl;
+        if(_lmk_ids[i] == -1) {
+            Point2f gp = _pPos->pt_im2g(_pts[i]);
+            _lmk_ids[i] = add_landmark(gp);
+        }
+        _global_pts[i] = get_land_mark(_lmk_ids[i]);
+        connect_land_mark(_id, i, _lmk_ids[i]);
+        //cout << _pts[i]  << "-->" << _global_pts[i] << endl;
     }
-    cout << "DEBUG***"<< endl;
 }
 
+void SimpleFrame::init_pose() {
+    //CV_Assert(_lmk_ids.empty());
+    //_lmk_ids = vector<int> (_pts.size(), -1);
+    _pPos = make_shared<GlobalPose>(0, 0, 0);
+    set_global_pts();
+}
 void SimpleFrame::set_pose(shared_ptr<Frame_Pose_Interface> pos) {
     _pPos = pos;
     set_global_pts();

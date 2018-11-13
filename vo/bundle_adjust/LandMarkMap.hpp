@@ -11,11 +11,9 @@
 using namespace std;
 using namespace cv;
 
-struct FrameRelation{
-    shared_ptr<Frame_Interface> ptr;
-    int pt_id;
-    FrameRelation(shared_ptr<Frame_Interface> connect_frame, int idx): ptr(connect_frame), pt_id(idx){}
-};
 
 
+Point2f get_land_mark(const int id);
+void connect_land_mark(int frame_id, const int im_pt_idx, const int lmk_pt_idx);
+int add_landmark(Point2f pt);
 #endif //LANDMARKMAP_H
